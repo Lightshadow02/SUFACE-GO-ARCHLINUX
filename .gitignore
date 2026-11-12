@@ -1,0 +1,4 @@
+# Sorties de build.sh
+build/
+out/
+*.iso
