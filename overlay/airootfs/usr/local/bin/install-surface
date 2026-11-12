@@ -1,0 +1,333 @@
+#!/bin/bash
+# install-surface : installe Arch Linux + KDE Plasma minimal + noyau linux-surface
+# Cible : Surface Go 2 (4 Go de RAM), UEFI. Efface UN disque entier (confirmation demandée).
+set -euo pipefail
+
+SURFACE_KEY=56C464BAAC421453
+KEY_URL=https://raw.githubusercontent.com/linux-surface/linux-surface/master/pkg/keys/surface.asc
+KEY_FILE=/usr/share/surface/surface.asc
+
+PACKAGES=(
+  base mkinitcpio linux-firmware intel-ucode
+  linux-surface linux-surface-headers
+  grub efibootmgr networkmanager sudo nano
+  plasma-desktop sddm breeze sddm-kcm konsole dolphin firefox xdg-desktop-portal-kde
+  plasma-nm plasma-pa pipewire pipewire-pulse wireplumber
+  powerdevil kscreen bluedevil bluez
+  iio-sensor-proxy plasma-keyboard zram-generator noto-fonts
+  base-devel git flatpak flatpak-kcm discover packagekit-qt6
+  plasma-systemmonitor btop
+  power-profiles-daemon thermald inetutils
+  kate ark spectacle kinfocenter
+  pacman-contrib ufw plasma-firewall
+  breeze-grub firefox-i18n-fr
+  fish fastfetch eza bat expac ttf-meslo-nerd
+)
+
+die() { echo "ERREUR : $*" >&2; exit 1; }
+
+[[ $EUID -eq 0 ]] || die "à lancer en root (tu l'es normalement sur l'ISO)."
+[[ -d /sys/firmware/efi ]] || die "pas démarré en UEFI."
+
+LOG=/var/log/install-surface.log
+exec > >(tee -a "$LOG") 2>&1
+echo "== Installation Arch + KDE (Surface) =="
+
+# --- Réseau ---
+if ! ping -c1 -W3 archlinux.org &>/dev/null; then
+  cat <<'EOF'
+Pas d'Internet. Pour le Wi-Fi :
+  iwctl
+  station wlan0 scan
+  station wlan0 get-networks
+  station wlan0 connect "NOM_DU_WIFI"
+  exit
+Puis relance : install-surface
+EOF
+  exit 1
+fi
+
+# --- Choix du disque (on exclut la clé USB de l'ISO) ---
+LIVE_DISK=""
+LIVE_DEV=$(findmnt -no SOURCE /run/archiso/bootmnt 2>/dev/null || true)
+if [[ -n $LIVE_DEV ]]; then
+  # Remonte jusqu'au disque physique (marche aussi avec Ventoy / device-mapper)
+  LIVE_DISK=$(lsblk -lnspo NAME,TYPE "$LIVE_DEV" 2>/dev/null | awk '$2=="disk"{print $1; exit}' || true)
+fi
+
+DISKS=()
+while read -r name; do
+  [[ $name == "$LIVE_DISK" ]] && continue
+  DISKS+=("$name")
+done < <(lsblk -dnpo NAME,TYPE | awk '$2=="disk"{print $1}' | grep -Ev 'boot[0-9]+$|rpmb$|/zram')
+
+[[ ${#DISKS[@]} -gt 0 ]] || die "aucun disque trouvé."
+
+echo
+echo "Disques disponibles :"
+for i in "${!DISKS[@]}"; do
+  d=${DISKS[$i]}
+  echo "  $((i+1))) $d  $(lsblk -dno SIZE,MODEL,TRAN "$d" | xargs)   (usb = disque externe)"
+done
+read -rp "Numéro du disque à EFFACER : " N
+[[ $N =~ ^[0-9]+$ ]] && (( N>=1 && N<=${#DISKS[@]} )) || die "choix invalide."
+DISK=${DISKS[$((N-1))]}
+
+echo
+lsblk "$DISK"
+echo
+echo "TOUT le contenu de $DISK va être supprimé."
+read -rp "Tape OUI (en majuscules) pour continuer : " OK
+[[ $OK == OUI ]] || die "annulé."
+
+# --- Infos utilisateur ---
+read -rp "Nom de la machine [surface] : " HOSTNAME_
+HOSTNAME_=${HOSTNAME_:-surface}
+HOSTNAME_=${HOSTNAME_,,}
+read -rp "Nom d'utilisateur (minuscules) : " USER_NAME
+USER_NAME=${USER_NAME,,}
+[[ $USER_NAME =~ ^[a-z_][a-z0-9_-]*$ ]] || die "nom d'utilisateur invalide (minuscules, chiffres, - et _)."
+while true; do
+  read -rsp "Mot de passe : " PASS; echo
+  read -rsp "Confirme le mot de passe : " PASS2; echo
+  [[ -n $PASS && $PASS == "$PASS2" ]] && break
+  echo "Les mots de passe ne correspondent pas (ou vide), réessaie."
+done
+
+# --- Partitionnement : 1 Go EFI + reste en ext4 (pas de swap disque, on utilise zram) ---
+echo "== Partitionnement =="
+umount -R /mnt 2>/dev/null || true
+swapoff -a 2>/dev/null || true
+wipefs -af "$DISK"
+sgdisk --zap-all "$DISK"
+sgdisk -n1:0:+1G -t1:ef00 -c1:EFI -n2:0:0 -t2:8300 -c2:root "$DISK"
+partprobe "$DISK"
+udevadm settle
+sleep 1
+
+if [[ $DISK == *[0-9] ]]; then P=${DISK}p; else P=$DISK; fi
+EFI=${P}1
+ROOT=${P}2
+
+mkfs.fat -F32 -n EFI "$EFI"
+mkfs.ext4 -F -L root "$ROOT"
+mount "$ROOT" /mnt
+mount --mkdir "$EFI" /mnt/boot
+
+# --- Dépôt linux-surface dans l'ISO (clé + repo) ---
+echo "== Dépôt linux-surface =="
+systemctl start pacman-init.service 2>/dev/null || true
+mkdir -p "$(dirname "$KEY_FILE")"
+[[ -s $KEY_FILE ]] || curl -fsSL "$KEY_URL" -o "$KEY_FILE"
+pacman-key --add "$KEY_FILE"
+pacman-key --lsign-key "$SURFACE_KEY"
+if ! grep -q '^\[linux-surface\]' /etc/pacman.conf; then
+  printf '\n[linux-surface]\nServer = https://pkg.surfacelinux.com/arch/\n' >> /etc/pacman.conf
+fi
+
+# --- Installation des paquets (pacstrap copie le trousseau de l'ISO, donc la clé Surface passe) ---
+echo "== Installation des paquets (ça peut être long) =="
+pacstrap /mnt "${PACKAGES[@]}"
+genfstab -U /mnt >> /mnt/etc/fstab
+
+# --- Réglages légers pour les futurs utilisateurs (RAM) ---
+SKEL=/mnt/etc/skel/.config
+mkdir -p "$SKEL"
+# Pas d'indexation Baloo
+printf '[Basic Settings]\nIndexing-Enabled=false\n' > "$SKEL/baloofilerc"
+# Animations instantanées
+printf '[KDE]\nAnimationDurationFactor=0\n' > "$SKEL/kdeglobals"
+# Pas de flou + clavier virtuel Plasma Keyboard activé d'office (Wayland)
+cat > "$SKEL/kwinrc" <<'EOF'
+[Plugins]
+blurEnabled=false
+
+[Wayland]
+InputMethod=/usr/share/applications/org.kde.plasma.keyboard.desktop
+EOF
+
+# Pas de notificateur Discover au démarrage (RAM)
+mkdir -p "$SKEL/autostart"
+printf '[Desktop Entry]\nHidden=true\n' > "$SKEL/autostart/org.kde.discover.notifier.desktop"
+# Modules kded inutiles sur une tablette (lecteur d'écran, proxy, partages SMB, menu global, comptes, dons…)
+: > "$SKEL/kded6rc"
+for m in screenreader wpad_detector lookandfeelautoswitcher appmenu baloosearchmodule kded_accounts donationmessage remotenotifier smbwatcher; do
+  printf '[Module-%s]\nautoload=false\n\n' "$m" >> "$SKEL/kded6rc"
+done
+# Effets KWin inutiles sur une tablette (on garde vue d'ensemble, vue des fenêtres, bords d'écran)
+{
+  echo
+  for e in shakecursor zoom slidingpopups slidingnotifications windowaperture slide dimscreen frozenapp \
+           scale fullscreen fadingpopups squash maximize dialogparent highlightwindow blendchanges \
+           startupfeedback systembell screentransform login logout sessionquit tileseditor colorpicker; do
+    echo "${e}Enabled=false"
+  done
+} >> "$SKEL/kwinrc.effets"
+# Clavier AZERTY dans la session KDE
+printf '[Layout]\nUse=true\nLayoutList=fr\nModel=pc105\n' > "$SKEL/kxkbrc"
+# Terminal façon CachyOS, en bleu Arch : fish + fastfetch + eza, profil Konsole dédié
+mkdir -p "$SKEL/fish" "$SKEL/fastfetch" /mnt/etc/skel/.local/share/konsole
+cp /usr/share/surface/config.fish "$SKEL/fish/config.fish"
+cp /usr/share/surface/fastfetch.jsonc "$SKEL/fastfetch/config.jsonc"
+cp /usr/share/surface/Surface.profile /usr/share/surface/ArchBleu.colorscheme /mnt/etc/skel/.local/share/konsole/
+printf '[Desktop Entry]\nDefaultProfile=Surface.profile\n' > "$SKEL/konsolerc"
+
+# KRunner sans recherche de fichiers (baloorunner)
+printf '[Plugins]\nbaloosearchEnabled=false\n' > "$SKEL/krunnerrc"
+
+# Firefox plus léger (moins de processus, onglets déchargés si la RAM manque)
+mkdir -p /mnt/etc/firefox/policies
+cat > /mnt/etc/firefox/policies/policies.json <<'FIREFOX'
+{
+  "policies": {
+    "DisableTelemetry": true,
+    "DisableFirefoxStudies": true,
+    "DisablePocket": true,
+    "RequestedLocales": ["fr"],
+    "Preferences": {
+      "dom.ipc.processCount": { "Value": 2, "Status": "default" },
+      "dom.ipc.processCount.webIsolated": { "Value": 1, "Status": "default" },
+      "browser.tabs.unloadOnLowMemory": { "Value": true, "Status": "default" },
+      "browser.sessionstore.interval": { "Value": 60000, "Status": "default" },
+      "browser.cache.memory.capacity": { "Value": 65536, "Status": "default" },
+      "intl.accept_languages": { "Value": "fr-FR, fr, en-US, en", "Status": "default" }
+    }
+  }
+}
+FIREFOX
+
+# Effets KWin coupés : ajoutés sous [Plugins] du kwinrc
+sed -i '/^blurEnabled=false$/r '"$SKEL/kwinrc.effets" "$SKEL/kwinrc" && rm -f "$SKEL/kwinrc.effets"
+
+# eMMC vue comme un disque par KDE (Moniteur système > stockage), zones de démarrage masquées
+cat > /mnt/etc/udev/rules.d/81-emmc-disque.rules <<'UDEV'
+KERNEL=="mmcblk[0-9]", SUBSYSTEMS=="mmc", ENV{DEVTYPE}=="disk", ENV{MMC_TYPE}=="MMC", ENV{ID_DRIVE_FLASH_MMC}="", ENV{ID_DRIVE_MEDIA_FLASH_MMC}=""
+KERNEL=="mmcblk[0-9]boot[0-9]", ENV{UDISKS_IGNORE}="1"
+UDEV
+# Moins de fragmentation mémoire pour les applis de la session
+mkdir -p /mnt/etc/environment.d
+echo 'MALLOC_ARENA_MAX=2' > /mnt/etc/environment.d/90-ram.conf
+
+# --- Configuration dans le chroot ---
+echo "== Configuration du système =="
+cat > /mnt/root/post.sh <<'POST'
+#!/bin/bash
+set -euo pipefail
+H=$1
+U=$2
+
+ln -sf /usr/share/zoneinfo/Europe/Paris /etc/localtime
+hwclock --systohc
+sed -i 's/^#\(fr_FR.UTF-8\)/\1/; s/^#\(en_US.UTF-8\)/\1/' /etc/locale.gen
+locale-gen
+echo "LANG=fr_FR.UTF-8" > /etc/locale.conf
+echo "KEYMAP=fr" > /etc/vconsole.conf
+mkdir -p /etc/X11/xorg.conf.d
+cat > /etc/X11/xorg.conf.d/00-keyboard.conf <<'CLAVIER'
+Section "InputClass"
+        Identifier "system-keyboard"
+        MatchIsKeyboard "on"
+        Option "XkbLayout" "fr"
+        Option "XkbModel" "pc105"
+EndSection
+CLAVIER
+echo "$H" > /etc/hostname
+
+# Dépôt linux-surface pour les mises à jour futures (la clé est déjà dans le trousseau)
+if ! grep -q '^\[linux-surface\]' /etc/pacman.conf; then
+  printf '\n[linux-surface]\nServer = https://pkg.surfacelinux.com/arch/\n' >> /etc/pacman.conf
+fi
+
+useradd -m -G wheel -s /bin/bash "$U"
+echo '%wheel ALL=(ALL:ALL) ALL' > /etc/sudoers.d/10-wheel
+chmod 440 /etc/sudoers.d/10-wheel
+
+# ZRAM (zstd), pas de swap disque
+cat > /etc/systemd/zram-generator.conf <<'EOF'
+[zram0]
+zram-size = ram
+compression-algorithm = zstd
+EOF
+
+# SDDM en Wayland
+mkdir -p /etc/sddm.conf.d
+cat > /etc/sddm.conf.d/10-wayland.conf <<'EOF'
+[General]
+DisplayServer=wayland
+InputMethod=
+GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell,QT_IM_MODULE=wayland
+
+[Wayland]
+CompositorCommand=kwin_wayland --drm --no-lockscreen --no-global-shortcuts --locale1
+EOF
+
+# Thème de connexion Breeze (celui de KDE)
+cat > /etc/sddm.conf.d/20-theme.conf <<'EOF'
+[Theme]
+Current=breeze
+CursorTheme=breeze_cursors
+EOF
+
+# zram : utiliser la RAM compressée plus tôt (réglages du wiki Arch)
+cat > /etc/sysctl.d/99-zram.conf <<'ZRAM'
+vm.swappiness = 180
+vm.page-cluster = 0
+vm.watermark_boost_factor = 0
+vm.watermark_scale_factor = 125
+ZRAM
+
+# Clavier virtuel de l'écran de connexion : SDDM ignore --inputmethod, on le met dans le kwinrc
+# du compte sddm (le thème Breeze a un bouton « Clavier virtuel » prévu pour KWin)
+mkdir -p /var/lib/sddm/.config
+cat > /var/lib/sddm/.config/kwinrc <<'SDDMKWIN'
+[Wayland]
+InputMethod=/usr/share/applications/org.kde.plasma.keyboard.desktop
+VirtualKeyboardEnabled=true
+SDDMKWIN
+chown -R sddm:sddm /var/lib/sddm/.config
+
+# Accessibilité (kaccess) et menu global GTK : services systemd sous Plasma 6, masqués pour tous (RAM)
+systemctl --global mask plasma-kaccess.service plasma-gmenudbusmenuproxy.service
+
+# Pare-feu : tout refuser en entrée (ufw refuse déjà par défaut), autoriser la sortie ;
+# réglable dans Paramètres > Pare-feu (plasma-firewall)
+sed -i 's/^ENABLED=.*/ENABLED=yes/' /etc/ufw/ufw.conf
+
+systemctl enable NetworkManager sddm bluetooth power-profiles-daemon thermald
+# Entretien : TRIM hebdomadaire de l'eMMC, cache pacman limité à 2 versions par paquet
+systemctl enable fstrim.timer paccache.timer ufw
+
+
+# Flathub (apps Flatpak, installables depuis Discover)
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo \
+  || echo "Flathub non ajouté (réseau ?). Plus tard : flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo"
+
+# yay (AUR) : version précompilée, pas de compilation lourde. Échec non bloquant.
+echo "$U ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/99-tmp-aur
+chmod 440 /etc/sudoers.d/99-tmp-aur
+su - "$U" -c 'git clone https://aur.archlinux.org/yay-bin.git /tmp/yay-bin && cd /tmp/yay-bin && makepkg -si --noconfirm' \
+  || echo "yay non installé. Plus tard : git clone https://aur.archlinux.org/yay-bin.git && cd yay-bin && makepkg -si"
+rm -f /etc/sudoers.d/99-tmp-aur
+rm -rf /tmp/yay-bin
+
+# GRUB
+sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet zswap.enabled=0 transparent_hugepage=madvise"/' /etc/default/grub
+sed -i 's/^#\?GRUB_TIMEOUT=.*/GRUB_TIMEOUT=3/' /etc/default/grub
+sed -i '/^#\?GRUB_THEME=/d' /etc/default/grub
+echo 'GRUB_THEME="/usr/share/grub/themes/breeze/theme.txt"' >> /etc/default/grub
+grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=Arch --recheck
+grub-install --target=x86_64-efi --efi-directory=/boot --removable --recheck
+grub-mkconfig -o /boot/grub/grub.cfg
+POST
+chmod +x /mnt/root/post.sh
+arch-chroot /mnt /root/post.sh "$HOSTNAME_" "$USER_NAME"
+rm -f /mnt/root/post.sh
+
+echo "$USER_NAME:$PASS" | arch-chroot /mnt chpasswd
+passwd -l -R /mnt root >/dev/null 2>&1 || true   # root verrouillé, on passe par sudo
+
+umount -R /mnt
+echo
+echo "== Terminé =="
+echo "Retire la clé USB puis tape : reboot"
+echo "Au login, choisis la session « Plasma (Wayland) »."
