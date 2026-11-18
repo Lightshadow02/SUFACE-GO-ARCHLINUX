@@ -1,8 +1,8 @@
 # Construit l'ISO Arch Surface dans un conteneur Arch Linux.
 # - Pull request : build de contrôle, ISO dispo en artefact 3 jours (onglet Actions)
 # - Lancement manuel (Actions > Construire l'ISO > Run workflow) : pareil
-# - Tag v* (ex. v1.0.0) : publie l'ISO + SHA256SUMS dans une Release GitHub
-#   (tag avec un tiret, ex. v1.1.0-beta1 → pré-release)
+# - Tag de version (ex. 1.1.0 ou v1.1.0) : publie l'ISO + SHA256SUMS dans une Release GitHub
+#   (tag avec un tiret, ex. 1.2.0-beta1 → pré-release)
 name: Construire l'ISO
 
 on:
@@ -10,7 +10,7 @@ on:
   pull_request:
     paths-ignore: ['**.md', 'docs/**']
   push:
-    tags: ['v*']
+    tags: ['v*', '[0-9]*']
 
 permissions:
   contents: write
@@ -53,7 +53,7 @@ jobs:
           retention-days: 3
 
       - name: Release GitHub
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
