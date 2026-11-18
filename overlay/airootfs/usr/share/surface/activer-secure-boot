@@ -2,6 +2,7 @@
 # Active Secure Boot sur la Surface avec des clés perso (sbctl) + celles de Microsoft.
 # À lancer sur le système INSTALLÉ, avec Secure Boot DÉSACTIVÉ dans l'UEFI
 # (sur Surface, Secure Boot désactivé = mode configuration, les clés peuvent être inscrites).
+# Ensuite on redémarre SANS toucher au réglage Secure Boot de l'UEFI : il s'active tout seul.
 # Retour arrière : UEFI (Volume Haut + Power) > Sécurité > Secure Boot désactivé, la tablette redémarre comme avant.
 set -euo pipefail
 [[ $EUID -eq 0 ]] || exec sudo "$0" "$@"
@@ -54,8 +55,10 @@ cat <<'MSG'
 
 Si sbctl status affiche « Setup Mode: Disabled » et que le noyau, grubx64.efi et BOOTX64.EFI sont signés
 (core.efi et grub.efi de /boot/grub peuvent rester non signés, ils ne servent pas au démarrage) :
-  1. Redémarre dans l'UEFI (Volume Haut + Power).
-  2. Sécurité > Secure Boot : active-le (l'UEFI peut afficher « configuration de clés personnalisée »).
-  3. Redémarre. Vérifie ensuite avec : sbctl status  (Secure Boot : Enabled)
-Si la Surface refuse de démarrer : retourne dans l'UEFI et désactive Secure Boot, tout redémarre comme avant.
+  1. Redémarre normalement. NE TOUCHE PAS au réglage Secure Boot de l'UEFI : sur Surface,
+     l'activer dans le menu remet la configuration « Microsoft uniquement » et efface tes clés
+     (résultat : « Security boot fail »).
+  2. Vérifie avec : sbctl status  → Secure Boot : Enabled (l'UEFI affiche « configuration personnalisée »).
+Si la Surface refuse de démarrer : UEFI (Volume Haut + Power) > Sécurité > désactive Secure Boot,
+tout redémarre comme avant ; relance alors activer-secure-boot.
 MSG
