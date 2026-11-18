@@ -49,7 +49,15 @@ alias ..='cd ..'
 alias ...='cd ../..'
 alias grep='grep --color=auto'
 alias update='sudo pacman -Syu && yay -Sua && flatpak update'
-alias cleanup='sudo pacman -Rns (pacman -Qtdq)'
+# Retire les paquets orphelins (dépendances plus utilisées)
+function cleanup
+    set -l orphelins (pacman -Qtdq)
+    if test (count $orphelins) -eq 0
+        echo "Aucun paquet orphelin, rien à nettoyer."
+        return 0
+    end
+    sudo pacman -Rns $orphelins
+end
 alias fixpacman='sudo rm /var/lib/pacman/db.lck'
 alias grubup='sudo grub-mkconfig -o /boot/grub/grub.cfg'
 alias jctl='journalctl -p 3 -xb'
