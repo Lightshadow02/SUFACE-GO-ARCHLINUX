@@ -160,3 +160,14 @@ Stylet
 - `build.sh` travaille désormais dans `/var/tmp/surface-iso-work` (avant : `/tmp`, en RAM sur Arch, trop petit avec 4 Go). Avertissement si moins de 10 Go libres. Modifiable : `sudo env WORK=/autre/dossier ./build.sh`.
 - Ne pas flasher la clé sur l'eMMC par erreur : vérifier `/dev/sdX` avec `lsblk` (l'eMMC est `mmcblk1`).
 
+## 16. Checklist du prochain rebuild (18/11)
+Ce que l'ISO installe d'office (tout est dans `install-surface`, rien à faire à la main) :
+- **Système** : Arch + noyau linux-surface, **GRUB** (thème Breeze, entrée Arch + entrée de secours removable), zram, pare-feu ufw.
+- **Bureau** : **KDE Plasma** (plasma-desktop, SDDM en Wayland avec clavier virtuel, Konsole, Dolphin, Kate, Ark, Spectacle, Moniteur système).
+- **Applis** : Firefox, Discord, Jellyfin Desktop, Spotify, Claude.
+- **Mises à jour** : icône dans la barre, notification quotidienne, `maj`, hook GRUB.
+- **Logiciels** : Discover + Flatpak (Flathub), yay (AUR).
+
+Étapes : fusionner la PR #1 → `sudo pacman -Syu` → `git checkout initial && git pull` → `sudo ./build.sh` → flasher la clé (vérifier `/dev/sdX` avec `lsblk`, jamais `mmcblk1`) → booter la Surface dessus → `install-surface` sur `mmcblk1`.
+Attention : la réinstallation efface toute l'eMMC. Sauvegarder avant ce qui n'est pas sur GitHub ou dans le cloud.
+
