@@ -1,0 +1,17 @@
+{
+  "KPlugin": {
+    "Id": "org.surface.majsysteme",
+    "Name": "Mises à jour",
+    "Description": "Icône qui apparaît quand des mises à jour sont disponibles ; un clic lance la mise à jour",
+    "Icon": "system-software-update",
+    "Category": "System Information",
+    "EnabledByDefault": true,
+    "Authors": [{ "Name": "Light" }],
+    "License": "GPL-2.0-or-later",
+    "Version": "1.0"
+  },
+  "KPackageStructure": "Plasma/Applet",
+  "X-Plasma-API-Minimum-Version": "6.0",
+  "X-Plasma-NotificationArea": "true",
+  "X-Plasma-NotificationAreaCategory": "SystemServices"
+}

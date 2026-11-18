@@ -213,6 +213,9 @@ install -Dm644 /usr/share/surface/maj.desktop /mnt/usr/share/applications/maj.de
 install -Dm644 /usr/share/surface/surface-updates-check.service /mnt/etc/systemd/user/surface-updates-check.service
 install -Dm644 /usr/share/surface/surface-updates-check.timer /mnt/etc/systemd/user/surface-updates-check.timer
 install -Dm644 /usr/share/surface/95-grub-update.hook /mnt/etc/pacman.d/hooks/95-grub-update.hook
+# Icône « Mises à jour » dans la zone de notification (widget Plasma, visible seulement s'il y a des mises à jour)
+mkdir -p /mnt/usr/share/plasma/plasmoids
+cp -r /usr/share/surface/plasmoid-maj /mnt/usr/share/plasma/plasmoids/org.surface.majsysteme
 
 # eMMC vue comme un disque par KDE (Moniteur système > stockage), zones de démarrage masquées
 cat > /mnt/etc/udev/rules.d/81-emmc-disque.rules <<'UDEV'
