@@ -1,12 +1,19 @@
 # Construit l'ISO Arch Surface dans un conteneur Arch Linux.
 # - Pull request : build de contrôle, ISO dispo en artefact 3 jours (onglet Actions)
-# - Lancement manuel (Actions > Construire l'ISO > Run workflow) : pareil
+# - Lancement manuel (Actions > Construire l'ISO > Run workflow) :
+#     champ « version » vide  → ISO en artefact 3 jours
+#     champ « version » rempli (ex. 1.1.0) → crée le tag et publie la Release
 # - Tag de version (ex. 1.1.0 ou v1.1.0) : publie l'ISO + SHA256SUMS dans une Release GitHub
 #   (tag avec un tiret, ex. 1.2.0-beta1 → pré-release)
 name: Construire l'ISO
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Version à publier (ex. 1.1.0, tiret = pré-release). Vide = simple build de contrôle"
+        required: false
+        default: ""
   pull_request:
     paths-ignore: ['**.md', 'docs/**']
   push:
@@ -43,7 +50,7 @@ jobs:
           cat SHA256SUMS
 
       - name: Artefact (contrôle)
-        if: github.event_name != 'push'
+        if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.version == '')
         uses: actions/upload-artifact@v6
         with:
           name: arch-surface-iso
@@ -53,13 +60,16 @@ jobs:
           retention-days: 3
 
       - name: Release GitHub
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.version != '')
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.version || github.ref_name }}
+          name: ${{ inputs.version || github.ref_name }}
+          target_commitish: ${{ github.sha }}
           files: |
             out/*.iso
             out/SHA256SUMS
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: ${{ contains(inputs.version || github.ref_name, '-') }}
           generate_release_notes: true
           body: |
             ISO Arch Linux + KDE Plasma pour Surface Go 2.
