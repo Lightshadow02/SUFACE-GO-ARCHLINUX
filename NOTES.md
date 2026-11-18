@@ -142,7 +142,7 @@ Stylet
 6. Type Cover, mode tablette et gestes, `--surface-live`, `copytoram=y` (jamais testés).
 
 À corriger / nettoyer
-7. uBlock Origin annoncé « forcé » (§10) mais absent de `policies.json`.
+7. ~~uBlock Origin absent de `policies.json`~~ : sans objet, Firefox remplacé par Falkon (§19).
 8. Retirer sshd et la règle ufw temporaire (§5 et §9) quand l'administration à distance est finie.
 9. Réinstaller proprement la Surface avec une ISO reconstruite depuis la branche fusionnée.
 
@@ -184,4 +184,11 @@ Attention : la réinstallation efface toute l'eMMC. Sauvegarder avant ce qui n'e
 - **Chiffrement** : en option dans `install-surface` (LUKS2, phrase de passe = mot de passe de session si laissée vide). Initramfs passé en hooks systemd (`sd-encrypt`, `sd-vconsole` pour l'AZERTY, `keyboard` avant `autodetect` pour le Type Cover / clavier USB), `rd.luks.name=UUID=root`, `rd.luks.options=discard` (TRIM gardé). /boot (partition EFI) reste en clair. **Pas testé.** Limite : pas de clavier tactile au déverrouillage (piste future : unl0kr). À vérifier : le Type Cover marche-t-il à l'écran de déverrouillage ?
 - **Btrfs + Snapper** : non pour l'instant (peut-être plus tard, avec une carte SD).
 - **Usage** : multimédia, notes/dessin au stylet, Discord, Claude, navigateur léger. Ajoutés : Xournal++, Krita, `intel-media-driver` (VA-API). Firefox gardé (déjà allégé : 2 processus, onglets déchargés).
+
+## 19. Deuxième série de réponses (18/11)
+- **Navigateur : Falkon remplace Firefox** (navigateur KDE, QtWebEngine, AdBlock intégré à activer dans ses extensions). Paquets `firefox`, `firefox-i18n-fr` et les policies Firefox retirés de l'ISO. Sur la Surface actuelle, `appliquer-sur-surface.sh` installe Falkon mais ne désinstalle pas Firefox (`sudo pacman -Rns firefox firefox-i18n-fr` pour le faire).
+- **Bluetooth** : gardé actif (sert sur la Surface).
+- **Boutons du stylet** : mapping à décider après le diagnostic libinput.
+- **install-surface** : valeurs par défaut neutres gardées (ISO partageable).
+- Releases : la session Claude ne peut pas créer de tags/releases (bloqué par le proxy). Publier : Actions > « Construire l'ISO » > Run workflow > version (ex. `1.1.0`). Une release `1.0.0` existe déjà (ISO du 12/11) → prochaine version `1.1.0`.
 
