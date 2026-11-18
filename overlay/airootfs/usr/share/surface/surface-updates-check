@@ -1,21 +1,29 @@
 #!/bin/bash
-# Compte les mises à jour disponibles (pacman + AUR + Flatpak) et prévient avec une notification Plasma.
-# Lancé par surface-updates-check.timer. Ne télécharge aucun paquet.
+# Compte les mises à jour disponibles (pacman + AUR + Flatpak). Ne télécharge aucun paquet.
+# Écrit le résultat dans ~/.cache/surface-updates (lu par l'icône « Mises à jour » de la barre)
+# et envoie une notification Plasma s'il y en a. --silencieux : pas de notification (utilisé par maj).
+# Lancé chaque jour par surface-updates-check.timer.
 set -uo pipefail
 
 N_PAC=$(checkupdates 2>/dev/null | wc -l)
-N_FLAT=0
-if command -v flatpak &>/dev/null; then
-  N_FLAT=$(flatpak remote-ls --updates --columns=application 2>/dev/null | wc -l)
-fi
 N_AUR=0
 if command -v yay &>/dev/null; then
   N_AUR=$(yay -Qua 2>/dev/null | wc -l)
 fi
-TOTAL=$((N_PAC + N_FLAT + N_AUR))
+N_FLAT=0
+if command -v flatpak &>/dev/null; then
+  N_FLAT=$(flatpak remote-ls --updates --columns=application 2>/dev/null | wc -l)
+fi
+TOTAL=$((N_PAC + N_AUR + N_FLAT))
+DETAILS="Arch : $N_PAC · AUR : $N_AUR · Flatpak : $N_FLAT"
 
+CACHE=${XDG_CACHE_HOME:-$HOME/.cache}/surface-updates
+mkdir -p "$(dirname "$CACHE")"
+printf '%s\n%s\n' "$TOTAL" "$DETAILS" > "$CACHE"
+
+[[ ${1:-} == --silencieux ]] && exit 0
 (( TOTAL > 0 )) || exit 0
 
 notify-send -a "Mises à jour" -i system-software-update \
   "$TOTAL mise(s) à jour disponible(s)" \
-  "Arch : $N_PAC · AUR : $N_AUR · Flatpak : $N_FLAT"$'\n'"Lance « Mettre à jour le système » dans le menu, ou tape maj dans Konsole."
+  "$DETAILS"$'\n'"Touche l'icône des mises à jour dans la barre, ou tape maj dans Konsole."

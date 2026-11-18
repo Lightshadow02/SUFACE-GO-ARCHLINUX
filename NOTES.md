@@ -151,3 +151,8 @@ Stylet
 - **Claude** (AUR) : Discover ne gère pas l'AUR, seul `yay` (donc `maj`) le met à jour. La notification compte maintenant aussi l'AUR (`yay -Qua`).
 - Jellyfin/Spotify (Flatpak) : mis à jour par Discover ou `maj`. Si l'un d'eux ne se met toujours pas à jour, noter lequel et le message.
 
+## 14. Icône « Mises à jour » dans la barre (18/11)
+- Widget Plasma maison `org.surface.majsysteme` (`overlay/.../surface/plasmoid-maj`, installé dans `/usr/share/plasma/plasmoids/`). Tourne dans plasmashell : aucun processus en plus.
+- `surface-updates-check` écrit le total dans `~/.cache/surface-updates` ; l'icône relit ce fichier chaque minute. Visible (ActiveStatus) s'il y a des mises à jour, rangée dans les entrées masquées sinon. Un clic : `konsole -e maj`. `maj` remet le compteur à jour à la fin (`--silencieux`), l'icône disparaît.
+- **Pas testé sur la Surface.** Si l'icône n'apparaît pas : clic droit sur la flèche de la zone de notification > Configurer > Entrées > « Mises à jour » sur « Toujours affiché » ou « Afficher si utile ». Après install, se déconnecter/reconnecter (ou `plasmashell --replace &`).
+

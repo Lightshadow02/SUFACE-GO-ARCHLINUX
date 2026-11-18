@@ -33,7 +33,7 @@ L'ISO sort dans `out/`. Flashe-la (Rufus en mode DD, Etcher, ou `dd`).
 - Clavier virtuel aussi sur l'écran de connexion (Plasma Keyboard lancé par KWin)
 - Kate, Ark, Spectacle, Centre d'informations
 - Applis : Firefox (fr), Discord (dépôt Arch), Jellyfin Desktop et Spotify (Flatpak), Claude (AUR `claude-desktop`, appli officielle). Échec non bloquant si le réseau coince
-- Mises à jour : notification quotidienne (timer léger, sans Discover), commande `maj` (pacman + AUR + Flatpak) et lanceur « Mettre à jour le système » dans le menu ; un hook pacman réinstalle GRUB quand `grub` est mis à jour
+- Mises à jour : icône dans la zone de notification qui n'apparaît que s'il y a des mises à jour (un clic lance `maj`), notification quotidienne (timer léger, sans Discover), commande `maj` (pacman + AUR + Flatpak) et lanceur « Mettre à jour le système » dans le menu ; un hook pacman réinstalle GRUB quand `grub` est mis à jour
 - Stylet MPP (Milikilo F97 et équivalents) : aucun appairage, pas de Bluetooth, donc pas de batterie du stylet dans KDE. Appui long sur le bouton du haut 1 s pour l'allumer (voyant vert). Pointeur et pression passent par le tactile ELAN ; les boutons du stylet sont encore à diagnostiquer (voir NOTES.md §11)
 - Journal de l'installation : `/var/log/install-surface.log`
 - Moniteur système KDE (plasma-systemmonitor) + btop
