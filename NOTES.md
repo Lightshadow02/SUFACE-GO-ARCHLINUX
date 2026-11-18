@@ -192,3 +192,10 @@ Attention : la réinstallation efface toute l'eMMC. Sauvegarder avant ce qui n'e
 - **install-surface** : valeurs par défaut neutres gardées (ISO partageable).
 - Releases : la session Claude ne peut pas créer de tags/releases (bloqué par le proxy). Publier : Actions > « Construire l'ISO » > Run workflow > version (ex. `1.1.0`). Une release `1.0.0` existe déjà (ISO du 12/11) → prochaine version `1.1.0`.
 
+## 20. Premier test de la 1.1.0 sur la Surface (18/11)
+- OK : timer et compteur des mises à jour, Falkon, Discord (+ SKIP_HOST_UPDATE), Xournal++, Krita, intel-media-driver, Claude, Jellyfin.
+- **Spotify (Flatpak) absent** après l'install. Corrigé pour 1.1.1 : les Flatpak s'installent un par un.
+- **Journal d'install perdu** : il était écrit dans le live (/var/log en RAM). Corrigé : copié dans `/var/log/install-surface.log` du système installé.
+- Secure Boot : `sbctl status` → Setup Mode **Enabled** sur la Go 2, l'inscription des clés devrait marcher. `activer-secure-boot` pas encore lancé.
+- RAM 2,87 Go / 3,69 Go à 18 min de démarrage : à regarder (`psmem`).
+
