@@ -115,3 +115,15 @@ Reste à tester : Type Cover (pas branchée pendant l'analyse), mode tablette/ge
 - **Batterie en % dans la barre** : réglé à la main sur la Surface (le panneau est créé à la 1re connexion, pas d'équivalent fiable dans le skel). Batterie « Stylus » à 0 % barrée : batterie du stylet ELAN, UPower 1.91 n'offre pas d'option pour la masquer.
 - **Applis** (installées à la main, pas dans l'ISO) : Jellyfin Desktop et Collabora Office (Flatpak), Claude (AUR `claude-desktop`, audité : `.deb` officiel Anthropic, SHA256 identique au dépôt apt d'Anthropic ; `menuBarEnabled=false` pour que fermer la fenêtre quitte l'appli). Client Nextcloud retiré (usage web).
 - RAM au repos : ~1,55 Go après connexion. Le reste (plasmashell, KWin, clavier virtuel) est l'incompressible du bureau KDE.
+
+## 11. Mises à jour + stylet (18/11)
+- **Stylet Milikilo F97** : protocole MPP, pas de Bluetooth (il s'allume par appui long 1 s sur le bouton du haut). Rien à appairer. **Batterie du stylet dans KDE : impossible avec ce stylet.** L'entrée « Stylus 0 % » vue avant était fantôme : le digitizer ELAN de la Surface Go 2 déclare à tort une batterie de stylet, et le noyau l'ignore depuis 2022 (quirk `HID_BATTERY_QUIRK_IGNORE`), d'où sa disparition. Le voyant du stylet est le seul indicateur.
+- **Boutons du stylet : ne répondent pas (18/11), à diagnostiquer sur la Surface.** `sudo libinput debug-events` puis appuyer sur chaque bouton : si des `TABLET_TOOL_BUTTON` apparaissent, le noyau les voit et le souci est côté KWin/Plasma (comportement connu sous Wayland, remappage KCM parfois sans effet) ; sinon c'est côté stylet/noyau.
+- **Notification de mises à jour** : `surface-updates-check` (timer utilisateur, 1×/jour, 10 min après la connexion) compte `checkupdates` + `flatpak remote-ls --updates` et envoie une notification Plasma. Aucun téléchargement. Remplace le notificateur Discover (coupé pour la RAM). Paquet ajouté : `libnotify`.
+- **`maj`** : pacman -Syu, puis yay -Sua, puis flatpak update, avec message si le noyau a changé (redémarrer). Lanceur dans le menu : « Mettre à jour le système ». L'alias fish `update` existe toujours.
+- **Hook pacman `95-grub-update.hook`** : relance grub-install (entrée Arch + removable) et grub-mkconfig quand `grub` est mis à jour, sinon le GRUB installé reste sur l'ancienne version.
+- **Pas fait volontairement** : mise à jour automatique sans surveillance (risque de casse sur Arch).
+- **À tester sur la Surface** : la notification s'affiche bien ; `maj` depuis le lanceur ; le hook (simuler avec `sudo pacman -S grub` si une réinstallation est possible).
+- **Incohérence relevée** : §10 dit « uBlock Origin forcé » mais `policies.json` ne contient pas encore la règle ExtensionSettings.
+- **Applis dans l'ISO** : Jellyfin Desktop (`org.jellyfin.JellyfinDesktop`) et Spotify (`com.spotify.Client`) en Flatpak, Claude via `yay -S claude-desktop` (pendant le sudo temporaire de l'install). Firefox était déjà là. Collabora Office reste à la main.
+- **`appliquer-sur-surface.sh`** : pose tout ça sur la Surface déjà installée, sans réinstaller.

@@ -1,0 +1,8 @@
+[Unit]
+Description=Vérifie les mises à jour disponibles (notification)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/surface-updates-check
+Nice=19
+IOSchedulingClass=idle

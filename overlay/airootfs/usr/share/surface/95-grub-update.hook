@@ -1,0 +1,9 @@
+[Trigger]
+Operation = Upgrade
+Type = Package
+Target = grub
+
+[Action]
+Description = Réinstallation de GRUB après sa mise à jour...
+When = PostTransaction
+Exec = /bin/sh -c 'grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=Arch --recheck && grub-install --target=x86_64-efi --efi-directory=/boot --removable --recheck && grub-mkconfig -o /boot/grub/grub.cfg'

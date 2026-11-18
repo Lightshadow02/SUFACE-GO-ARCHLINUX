@@ -22,6 +22,7 @@ PACKAGES=(
   pacman-contrib ufw plasma-firewall
   breeze-grub firefox-i18n-fr
   fish fastfetch eza bat expac ttf-meslo-nerd
+  libnotify
 )
 
 die() { echo "ERREUR : $*" >&2; exit 1; }
@@ -199,6 +200,15 @@ FIREFOX
 # Effets KWin coupés : ajoutés sous [Plugins] du kwinrc
 sed -i '/^blurEnabled=false$/r '"$SKEL/kwinrc.effets" "$SKEL/kwinrc" && rm -f "$SKEL/kwinrc.effets"
 
+# Mises à jour : commande « maj », lanceur dans le menu, notification quotidienne (timer utilisateur),
+# et hook pacman qui réinstalle GRUB quand le paquet grub est mis à jour
+install -Dm755 /usr/share/surface/maj /mnt/usr/local/bin/maj
+install -Dm755 /usr/share/surface/surface-updates-check /mnt/usr/local/bin/surface-updates-check
+install -Dm644 /usr/share/surface/maj.desktop /mnt/usr/share/applications/maj.desktop
+install -Dm644 /usr/share/surface/surface-updates-check.service /mnt/etc/systemd/user/surface-updates-check.service
+install -Dm644 /usr/share/surface/surface-updates-check.timer /mnt/etc/systemd/user/surface-updates-check.timer
+install -Dm644 /usr/share/surface/95-grub-update.hook /mnt/etc/pacman.d/hooks/95-grub-update.hook
+
 # eMMC vue comme un disque par KDE (Moniteur système > stockage), zones de démarrage masquées
 cat > /mnt/etc/udev/rules.d/81-emmc-disque.rules <<'UDEV'
 KERNEL=="mmcblk[0-9]", SUBSYSTEMS=="mmc", ENV{DEVTYPE}=="disk", ENV{MMC_TYPE}=="MMC", ENV{ID_DRIVE_FLASH_MMC}="", ENV{ID_DRIVE_MEDIA_FLASH_MMC}=""
@@ -288,6 +298,8 @@ chown -R sddm:sddm /var/lib/sddm/.config
 
 # Accessibilité (kaccess) et menu global GTK : services systemd sous Plasma 6, masqués pour tous (RAM)
 systemctl --global mask plasma-kaccess.service plasma-gmenudbusmenuproxy.service
+# Notification quotidienne des mises à jour disponibles (léger : un timer, pas de démon)
+systemctl --global enable surface-updates-check.timer
 
 # Pare-feu : tout refuser en entrée (ufw refuse déjà par défaut), autoriser la sortie ;
 # réglable dans Paramètres > Pare-feu (plasma-firewall)
@@ -301,12 +313,18 @@ systemctl enable fstrim.timer paccache.timer ufw
 # Flathub (apps Flatpak, installables depuis Discover)
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo \
   || echo "Flathub non ajouté (réseau ?). Plus tard : flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo"
+# Applis de base en Flatpak : Jellyfin Desktop et Spotify. Échec non bloquant.
+flatpak install -y --noninteractive flathub org.jellyfin.JellyfinDesktop com.spotify.Client \
+  || echo "Jellyfin/Spotify non installés. Plus tard : flatpak install flathub org.jellyfin.JellyfinDesktop com.spotify.Client"
 
 # yay (AUR) : version précompilée, pas de compilation lourde. Échec non bloquant.
 echo "$U ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/99-tmp-aur
 chmod 440 /etc/sudoers.d/99-tmp-aur
 su - "$U" -c 'git clone https://aur.archlinux.org/yay-bin.git /tmp/yay-bin && cd /tmp/yay-bin && makepkg -si --noconfirm' \
   || echo "yay non installé. Plus tard : git clone https://aur.archlinux.org/yay-bin.git && cd yay-bin && makepkg -si"
+# Claude Desktop (AUR claude-desktop, paquet de l'appli officielle Anthropic). Échec non bloquant.
+su - "$U" -c 'yay -S --noconfirm --needed claude-desktop' \
+  || echo "Claude non installé. Plus tard : yay -S claude-desktop"
 rm -f /etc/sudoers.d/99-tmp-aur
 rm -rf /tmp/yay-bin
 
