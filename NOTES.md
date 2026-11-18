@@ -179,3 +179,9 @@ Attention : la réinstallation efface toute l'eMMC. Sauvegarder avant ce qui n'e
 - `activer-secure-boot` n'est **pas** lancé pendant l'install : il faut de toute façon passer par l'UEFI pour activer Secure Boot.
 - Retour arrière : désactiver Secure Boot dans l'UEFI. Ne jamais supprimer `/var/lib/sbctl` (clés).
 
+## 18. Réponses du 18/11 et ajouts
+- **Release** : v1.0.0 publiée directement après un build GitHub réussi (choix de Light).
+- **Chiffrement** : en option dans `install-surface` (LUKS2, phrase de passe = mot de passe de session si laissée vide). Initramfs passé en hooks systemd (`sd-encrypt`, `sd-vconsole` pour l'AZERTY, `keyboard` avant `autodetect` pour le Type Cover / clavier USB), `rd.luks.name=UUID=root`, `rd.luks.options=discard` (TRIM gardé). /boot (partition EFI) reste en clair. **Pas testé.** Limite : pas de clavier tactile au déverrouillage (piste future : unl0kr). À vérifier : le Type Cover marche-t-il à l'écran de déverrouillage ?
+- **Btrfs + Snapper** : non pour l'instant (peut-être plus tard, avec une carte SD).
+- **Usage** : multimédia, notes/dessin au stylet, Discord, Claude, navigateur léger. Ajoutés : Xournal++, Krita, `intel-media-driver` (VA-API). Firefox gardé (déjà allégé : 2 processus, onglets déchargés).
+

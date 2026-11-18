@@ -30,7 +30,7 @@ jobs:
       - name: Paquets de build
         run: pacman -Syu --noconfirm --needed archiso git
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Construction de l'ISO
         run: bash build.sh
@@ -44,7 +44,7 @@ jobs:
 
       - name: Artefact (contrôle)
         if: github.event_name != 'push'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: arch-surface-iso
           path: |

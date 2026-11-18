@@ -27,7 +27,7 @@ Elles sont construites automatiquement par GitHub (`.github/workflows/build-iso.
 1. UEFI (Volume Haut + Power) : Secure Boot = Disabled.
 2. Boot sur la clé : Volume Bas + Power.
 3. Internet : Ethernet via hub, ou `iwctl` pour le Wi-Fi.
-4. Tape `install-surface`, choisis le disque, tape OUI, renseigne user + mot de passe.
+4. Tape `install-surface`, choisis le disque, tape OUI, renseigne user + mot de passe, puis réponds à la question du chiffrement (optionnel : il faudra alors le Type Cover ou un clavier USB à chaque démarrage).
 5. `reboot`, retire la clé, choisis la session **Plasma (Wayland)** au login.
 
 ## Ce que ça installe
@@ -39,7 +39,9 @@ Elles sont construites automatiquement par GitHub (`.github/workflows/build-iso.
 - Gestion d'énergie : power-profiles-daemon (profils batterie de KDE) + thermald
 - Clavier virtuel aussi sur l'écran de connexion (Plasma Keyboard lancé par KWin)
 - Kate, Ark, Spectacle, Centre d'informations
-- Applis : Firefox (fr), Discord (dépôt Arch), Jellyfin Desktop et Spotify (Flatpak), Claude (AUR `claude-desktop`, appli officielle). Échec non bloquant si le réseau coince
+- Décodage vidéo matériel Intel (`intel-media-driver`, VA-API) pour Firefox et les vidéos
+- Chiffrement LUKS2 du disque en option à l'installation
+- Applis : Firefox (fr), Discord (dépôt Arch), Xournal++ (notes au stylet), Krita (dessin), Jellyfin Desktop et Spotify (Flatpak), Claude (AUR `claude-desktop`, appli officielle). Échec non bloquant si le réseau coince
 - Mises à jour : icône dans la zone de notification qui n'apparaît que s'il y a des mises à jour (un clic lance `maj`), notification quotidienne (timer léger, sans Discover), commande `maj` (pacman + AUR + Flatpak) et lanceur « Mettre à jour le système » dans le menu ; un hook pacman réinstalle GRUB quand `grub` est mis à jour
 - Stylet MPP (Milikilo F97 et équivalents) : aucun appairage, pas de Bluetooth, donc pas de batterie du stylet dans KDE. Appui long sur le bouton du haut 1 s pour l'allumer (voyant vert). Pointeur et pression passent par le tactile ELAN ; les boutons du stylet sont encore à diagnostiquer (voir NOTES.md §11)
 - Journal de l'installation : `/var/log/install-surface.log`
