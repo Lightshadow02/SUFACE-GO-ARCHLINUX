@@ -1,0 +1,9 @@
+[Trigger]
+Operation = Upgrade
+Type = Package
+Target = grub
+
+[Action]
+Description = Réinstallation de GRUB après sa mise à jour (et signature Secure Boot si activé)...
+When = PostTransaction
+Exec = /usr/local/bin/surface-grub-install
