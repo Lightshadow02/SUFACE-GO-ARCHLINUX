@@ -22,7 +22,8 @@ PACKAGES=(
   pacman-contrib ufw plasma-firewall
   breeze-grub firefox-i18n-fr
   fish fastfetch eza bat expac ttf-meslo-nerd
-  libnotify discord sbctl
+  libnotify discord sbctl cryptsetup
+  xournalpp krita intel-media-driver
 )
 
 die() { echo "ERREUR : $*" >&2; exit 1; }
@@ -95,9 +96,28 @@ while true; do
   echo "Les mots de passe ne correspondent pas (ou vide), réessaie."
 done
 
+# --- Chiffrement du disque (optionnel) ---
+echo
+echo "Chiffrer le disque (LUKS) ? Ça protège tes données si la tablette est volée."
+echo "ATTENTION : la phrase de passe se tape au démarrage, AVANT le bureau : il faut le Type Cover"
+echo "ou un clavier USB à CHAQUE démarrage (pas de clavier tactile à ce moment-là)."
+read -rp "Chiffrer le disque ? [o/N] : " CHIFFRE
+LUKS=0
+if [[ ${CHIFFRE,,} == o* ]]; then
+  LUKS=1
+  while true; do
+    read -rsp "Phrase de passe du disque (Entrée = même mot de passe que la session) : " LP; echo
+    if [[ -z $LP ]]; then LP=$PASS; break; fi
+    read -rsp "Confirme la phrase de passe : " LP2; echo
+    [[ $LP == "$LP2" ]] && break
+    echo "Les phrases ne correspondent pas, réessaie."
+  done
+fi
+
 # --- Partitionnement : 1 Go EFI + reste en ext4 (pas de swap disque, on utilise zram) ---
 echo "== Partitionnement =="
 umount -R /mnt 2>/dev/null || true
+cryptsetup close root 2>/dev/null || true
 swapoff -a 2>/dev/null || true
 wipefs -af "$DISK"
 sgdisk --zap-all "$DISK"
@@ -111,8 +131,19 @@ EFI=${P}1
 ROOT=${P}2
 
 mkfs.fat -F32 -n EFI "$EFI"
-mkfs.ext4 -F -L root "$ROOT"
-mount "$ROOT" /mnt
+LUKS_UUID=""
+if (( LUKS )); then
+  echo "== Chiffrement de $ROOT (LUKS2) =="
+  printf '%s' "$LP" | cryptsetup luksFormat --type luks2 --batch-mode --label root-chiffre --key-file=- "$ROOT"
+  printf '%s' "$LP" | cryptsetup open --allow-discards --key-file=- "$ROOT" root
+  unset LP LP2
+  LUKS_UUID=$(blkid -s UUID -o value "$ROOT")
+  ROOT_FS=/dev/mapper/root
+else
+  ROOT_FS=$ROOT
+fi
+mkfs.ext4 -F -L root "$ROOT_FS"
+mount "$ROOT_FS" /mnt
 mount --mkdir "$EFI" /mnt/boot
 
 # --- Dépôt linux-surface dans l'ISO (clé + repo) ---
@@ -236,6 +267,7 @@ cat > /mnt/root/post.sh <<'POST'
 set -euo pipefail
 H=$1
 U=$2
+L=${3:-}   # UUID de la partition LUKS (vide = pas de chiffrement)
 
 ln -sf /usr/share/zoneinfo/Europe/Paris /etc/localtime
 hwclock --systohc
@@ -344,18 +376,29 @@ sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 
 sed -i 's/^#\?GRUB_TIMEOUT=.*/GRUB_TIMEOUT=3/' /etc/default/grub
 sed -i '/^#\?GRUB_THEME=/d' /etc/default/grub
 echo 'GRUB_THEME="/usr/share/grub/themes/breeze/theme.txt"' >> /etc/default/grub
+# Disque chiffré : déverrouillage au démarrage (initramfs systemd, clavier AZERTY, TRIM conservé)
+if [[ -n $L ]]; then
+  sed -i 's/^HOOKS=.*/HOOKS=(base systemd keyboard autodetect microcode modconf kms sd-vconsole block sd-encrypt filesystems fsck)/' /etc/mkinitcpio.conf
+  mkinitcpio -P
+  sed -i "s|^GRUB_CMDLINE_LINUX=.*|GRUB_CMDLINE_LINUX=\"rd.luks.name=$L=root rd.luks.options=discard\"|" /etc/default/grub
+fi
+
 # Entrée Arch + entrée de secours, modules intégrés (prêt pour Secure Boot, voir activer-secure-boot)
 /usr/local/bin/surface-grub-install
 POST
 chmod +x /mnt/root/post.sh
-arch-chroot /mnt /root/post.sh "$HOSTNAME_" "$USER_NAME"
+arch-chroot /mnt /root/post.sh "$HOSTNAME_" "$USER_NAME" "$LUKS_UUID"
 rm -f /mnt/root/post.sh
 
 echo "$USER_NAME:$PASS" | arch-chroot /mnt chpasswd
 passwd -l -R /mnt root >/dev/null 2>&1 || true   # root verrouillé, on passe par sudo
 
 umount -R /mnt
+if (( LUKS )); then cryptsetup close root; fi
 echo
 echo "== Terminé =="
 echo "Retire la clé USB puis tape : reboot"
 echo "Au login, choisis la session « Plasma (Wayland) »."
+if (( LUKS )); then
+  echo "Disque chiffré : branche le Type Cover (ou un clavier USB) pour taper la phrase de passe au démarrage."
+fi
