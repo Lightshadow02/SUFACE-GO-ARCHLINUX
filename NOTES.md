@@ -199,3 +199,4 @@ Attention : la réinstallation efface toute l'eMMC. Sauvegarder avant ce qui n'e
 - Secure Boot : `sbctl status` → Setup Mode **Enabled** sur la Go 2, l'inscription des clés devrait marcher. `activer-secure-boot` pas encore lancé.
 - RAM 2,87 Go / 3,69 Go à 18 min de démarrage : à regarder (`psmem`).
 
+- Clavier Bluetooth (pavé vu comme une souris, 093a:2860) : clic gauche OK après la réinstallation 1.1.0.
