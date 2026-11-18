@@ -23,8 +23,8 @@ cp -r "$S/plasmoid-maj" /usr/share/plasma/plasmoids/org.surface.majsysteme
 su - "$U" -c '/usr/local/bin/surface-updates-check --silencieux' || true
 systemctl --global enable surface-updates-check.timer
 
-echo "== Applis : Firefox, Discord, Xournal++, Krita, Jellyfin, Spotify, Claude + décodage vidéo matériel =="
-pacman -S --needed --noconfirm firefox firefox-i18n-fr discord xournalpp krita intel-media-driver
+echo "== Applis : Falkon, Discord, Xournal++, Krita, Jellyfin, Spotify, Claude + décodage vidéo matériel =="
+pacman -S --needed --noconfirm falkon discord xournalpp krita intel-media-driver
 flatpak install -y --noninteractive flathub org.jellyfin.JellyfinDesktop com.spotify.Client || echo "Flatpak : échec (réseau ?)"
 su - "$U" -c 'yay -S --needed claude-desktop' || echo "Claude : échec, réessaie avec : yay -S claude-desktop"
 
@@ -37,6 +37,10 @@ if [[ ! -s $F ]]; then
   chown "$U:$U" "$F"
 elif ! grep -q SKIP_HOST_UPDATE "$F"; then
   sed -i '0,/{/s//{\n  "SKIP_HOST_UPDATE": true,/' "$F"
+fi
+
+if pacman -Q firefox &>/dev/null; then
+  echo "Firefox est encore installé (remplacé par Falkon). Pour le retirer : sudo pacman -Rns firefox firefox-i18n-fr"
 fi
 
 echo

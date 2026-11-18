@@ -11,7 +11,7 @@ PACKAGES=(
   base mkinitcpio linux-firmware intel-ucode
   linux-surface linux-surface-headers
   grub efibootmgr networkmanager sudo nano
-  plasma-desktop sddm breeze sddm-kcm konsole dolphin firefox xdg-desktop-portal-kde
+  plasma-desktop sddm breeze sddm-kcm konsole dolphin falkon xdg-desktop-portal-kde
   plasma-nm plasma-pa pipewire pipewire-pulse wireplumber
   powerdevil kscreen bluedevil bluez
   iio-sensor-proxy plasma-keyboard zram-generator noto-fonts
@@ -20,7 +20,7 @@ PACKAGES=(
   power-profiles-daemon thermald inetutils
   kate ark spectacle kinfocenter
   pacman-contrib ufw plasma-firewall
-  breeze-grub firefox-i18n-fr
+  breeze-grub
   fish fastfetch eza bat expac ttf-meslo-nerd
   libnotify discord sbctl cryptsetup
   xournalpp krita intel-media-driver
@@ -212,26 +212,6 @@ printf '{\n  "SKIP_HOST_UPDATE": true\n}\n' > "$SKEL/discord/settings.json"
 # KRunner sans recherche de fichiers (baloorunner)
 printf '[Plugins]\nbaloosearchEnabled=false\n' > "$SKEL/krunnerrc"
 
-# Firefox plus léger (moins de processus, onglets déchargés si la RAM manque)
-mkdir -p /mnt/etc/firefox/policies
-cat > /mnt/etc/firefox/policies/policies.json <<'FIREFOX'
-{
-  "policies": {
-    "DisableTelemetry": true,
-    "DisableFirefoxStudies": true,
-    "DisablePocket": true,
-    "RequestedLocales": ["fr"],
-    "Preferences": {
-      "dom.ipc.processCount": { "Value": 2, "Status": "default" },
-      "dom.ipc.processCount.webIsolated": { "Value": 1, "Status": "default" },
-      "browser.tabs.unloadOnLowMemory": { "Value": true, "Status": "default" },
-      "browser.sessionstore.interval": { "Value": 60000, "Status": "default" },
-      "browser.cache.memory.capacity": { "Value": 65536, "Status": "default" },
-      "intl.accept_languages": { "Value": "fr-FR, fr, en-US, en", "Status": "default" }
-    }
-  }
-}
-FIREFOX
 
 # Effets KWin coupés : ajoutés sous [Plugins] du kwinrc
 sed -i '/^blurEnabled=false$/r '"$SKEL/kwinrc.effets" "$SKEL/kwinrc" && rm -f "$SKEL/kwinrc.effets"
