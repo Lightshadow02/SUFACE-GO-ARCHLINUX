@@ -129,3 +129,20 @@ Reste à tester : Type Cover (pas branchée pendant l'analyse), mode tablette/ge
 - **Applis dans l'ISO** : Jellyfin Desktop (`org.jellyfin.JellyfinDesktop`) et Spotify (`com.spotify.Client`) en Flatpak, Claude via `yay -S claude-desktop` (pendant le sudo temporaire de l'install). Firefox était déjà là. Collabora Office reste à la main.
 - **`appliquer-sur-surface.sh`** : pose tout ça sur la Surface déjà installée, sans réinstaller.
 - **Discord** : paquet `discord` du dépôt officiel Arch (extra), mis à jour par pacman/`maj`.
+
+## 12. CE QUI MANQUE ENCORE (à jour au 18/11)
+Stylet
+1. **Boutons du stylet sans effet.** Diagnostic : `sudo pacman -S libinput-tools` puis `sudo libinput debug-events`, stylet posé, appuyer sur chaque bouton. Des lignes `TABLET_TOOL_BUTTON` → souci KWin/Plasma (remappage possible) ; rien → souci stylet/noyau.
+2. **Batterie du stylet à 1 %.** Vient du noyau (officiel et linux-surface 7.1 à 7.3 vérifiés), pas de l'ISO. Poster `docs/signalement-batterie-stylet.md` sur l'issue tracker linux-surface. Envisager `libinput-tools` dans l'ISO pour le diagnostic.
+
+À tester sur la Surface
+3. Notification quotidienne des mises à jour, commande `maj` et son lanceur, hook GRUB.
+4. Installation dans le chroot de Jellyfin/Spotify (Flatpak), Claude (yay) et Discord.
+5. `appliquer-sur-surface.sh` sur la tablette déjà installée.
+6. Type Cover, mode tablette et gestes, `--surface-live`, `copytoram=y` (jamais testés).
+
+À corriger / nettoyer
+7. uBlock Origin annoncé « forcé » (§10) mais absent de `policies.json`.
+8. Retirer sshd et la règle ufw temporaire (§5 et §9) quand l'administration à distance est finie.
+9. Réinstaller proprement la Surface avec une ISO reconstruite depuis la branche fusionnée.
+
