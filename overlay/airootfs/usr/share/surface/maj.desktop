@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Mettre à jour le système
+Comment=Met à jour Arch, l'AUR et les Flatpak
+Exec=konsole -e /usr/local/bin/maj
+Icon=system-software-update
+Terminal=false
+Categories=System;

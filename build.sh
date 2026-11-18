@@ -12,12 +12,19 @@ SURFACE_LIVE=0
 
 HERE=$(cd "$(dirname "$0")" && pwd)
 PROFILE=$HERE/build/profile
-WORK=/tmp/surface-iso-work
+# Dossier de travail sur le disque (/tmp est en RAM sur Arch : trop petit avec 4 Go)
+# Changeable : sudo env WORK=/autre/dossier ./build.sh
+WORK=${WORK:-/var/tmp/surface-iso-work}
 OUT=$HERE/out
 KEY_ID=56C464BAAC421453
 KEY_URL=https://raw.githubusercontent.com/linux-surface/linux-surface/master/pkg/keys/surface.asc
 
 command -v mkarchiso >/dev/null || pacman -S --needed --noconfirm archiso
+
+# Place libre : il faut environ 10 Go pour le dossier de travail + l'ISO
+mkdir -p "$(dirname "$WORK")"
+LIBRE=$(df --output=avail -BG "$(dirname "$WORK")" | tail -1 | tr -dc 0-9)
+(( LIBRE >= 10 )) || echo "ATTENTION : seulement ${LIBRE} Go libres pour $WORK, le build risque d'échouer."
 [[ -d /usr/share/archiso/configs/releng ]] || { echo "Profil releng introuvable (paquet archiso)."; exit 1; }
 
 rm -rf "$HERE/build" "$WORK"

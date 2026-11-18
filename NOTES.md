@@ -115,3 +115,80 @@ Reste à tester : Type Cover (pas branchée pendant l'analyse), mode tablette/ge
 - **Batterie en % dans la barre** : réglé à la main sur la Surface (le panneau est créé à la 1re connexion, pas d'équivalent fiable dans le skel). Batterie « Stylus » à 0 % barrée : batterie du stylet ELAN, UPower 1.91 n'offre pas d'option pour la masquer.
 - **Applis** (installées à la main, pas dans l'ISO) : Jellyfin Desktop et Collabora Office (Flatpak), Claude (AUR `claude-desktop`, audité : `.deb` officiel Anthropic, SHA256 identique au dépôt apt d'Anthropic ; `menuBarEnabled=false` pour que fermer la fenêtre quitte l'appli). Client Nextcloud retiré (usage web).
 - RAM au repos : ~1,55 Go après connexion. Le reste (plasmashell, KWin, clavier virtuel) est l'incompressible du bureau KDE.
+
+## 11. Mises à jour + stylet (18/11)
+- **Stylet Milikilo F97** : protocole MPP, pas de Bluetooth (il s'allume par appui long 1 s sur le bouton du haut). Rien à appairer.
+- **Batterie du stylet bloquée à 1 % (18/11)** : écran `ELAN9038:00 04F3:2A1C`. Le noyau masquait cette fausse batterie (quirk `HID_BATTERY_QUIRK_IGNORE` dédié à la Go 2), mais le noyau récent a retiré cette entrée au profit d'une règle générale ELAN (`HID_BATTERY_QUIRK_DYNAMIC` : batterie affichée dès que le stylet donne signe de vie). D'où le 1 % dès qu'on utilise le stylet. Rien de propre à faire côté ISO (ni UPower ni Plasma ne permettent de masquer un appareil). Signalement prêt dans `docs/signalement-batterie-stylet.md`, à poster sur l'issue tracker de linux-surface. Le voyant du stylet reste le seul indicateur fiable.
+- **Boutons du stylet : ne répondent pas (18/11), à diagnostiquer sur la Surface.** `sudo libinput debug-events` puis appuyer sur chaque bouton : si des `TABLET_TOOL_BUTTON` apparaissent, le noyau les voit et le souci est côté KWin/Plasma (comportement connu sous Wayland, remappage KCM parfois sans effet) ; sinon c'est côté stylet/noyau.
+- **Notification de mises à jour** : `surface-updates-check` (timer utilisateur, 1×/jour, 10 min après la connexion) compte `checkupdates` + `flatpak remote-ls --updates` et envoie une notification Plasma. Aucun téléchargement. Remplace le notificateur Discover (coupé pour la RAM). Paquet ajouté : `libnotify`.
+- **`maj`** : pacman -Syu, puis yay -Sua, puis flatpak update, avec message si le noyau a changé (redémarrer). Lanceur dans le menu : « Mettre à jour le système ». L'alias fish `update` existe toujours.
+- **Hook pacman `95-grub-update.hook`** : relance grub-install (entrée Arch + removable) et grub-mkconfig quand `grub` est mis à jour, sinon le GRUB installé reste sur l'ancienne version.
+- **Pas fait volontairement** : mise à jour automatique sans surveillance (risque de casse sur Arch).
+- **À tester sur la Surface** : la notification s'affiche bien ; `maj` depuis le lanceur ; le hook (simuler avec `sudo pacman -S grub` si une réinstallation est possible).
+- **Incohérence relevée** : §10 dit « uBlock Origin forcé » mais `policies.json` ne contient pas encore la règle ExtensionSettings.
+- **Applis dans l'ISO** : Jellyfin Desktop (`org.jellyfin.JellyfinDesktop`) et Spotify (`com.spotify.Client`) en Flatpak, Claude via `yay -S claude-desktop` (pendant le sudo temporaire de l'install). Firefox était déjà là. Collabora Office reste à la main.
+- **`appliquer-sur-surface.sh`** : pose tout ça sur la Surface déjà installée, sans réinstaller.
+- **Discord** : paquet `discord` du dépôt officiel Arch (extra), mis à jour par pacman/`maj`.
+
+## 12. CE QUI MANQUE ENCORE (à jour au 18/11)
+Stylet
+1. **Boutons du stylet sans effet.** Diagnostic : `sudo pacman -S libinput-tools` puis `sudo libinput debug-events`, stylet posé, appuyer sur chaque bouton. Des lignes `TABLET_TOOL_BUTTON` → souci KWin/Plasma (remappage possible) ; rien → souci stylet/noyau.
+2. **Batterie du stylet à 1 %.** Vient du noyau (officiel et linux-surface 7.1 à 7.3 vérifiés), pas de l'ISO. Poster `docs/signalement-batterie-stylet.md` sur l'issue tracker linux-surface. Envisager `libinput-tools` dans l'ISO pour le diagnostic.
+
+À tester sur la Surface
+3. Notification quotidienne des mises à jour, commande `maj` et son lanceur, hook GRUB.
+4. Installation dans le chroot de Jellyfin/Spotify (Flatpak), Claude (yay) et Discord.
+5. `appliquer-sur-surface.sh` sur la tablette déjà installée.
+6. Type Cover, mode tablette et gestes, `--surface-live`, `copytoram=y` (jamais testés).
+
+À corriger / nettoyer
+7. ~~uBlock Origin absent de `policies.json`~~ : sans objet, Firefox remplacé par Falkon (§19).
+8. Retirer sshd et la règle ufw temporaire (§5 et §9) quand l'administration à distance est finie.
+9. Réinstaller proprement la Surface avec une ISO reconstruite depuis la branche fusionnée.
+
+## 13. Applis qui ne se mettent pas à jour (18/11)
+- **Discord** (paquet Arch) bloque au démarrage quand le dépôt a un temps de retard sur Discord. Corrigé : `"SKIP_HOST_UPDATE": true` dans `~/.config/discord/settings.json` (skel de l'ISO + `appliquer-sur-surface.sh`), pacman fait les mises à jour.
+- **Claude** (AUR) : Discover ne gère pas l'AUR, seul `yay` (donc `maj`) le met à jour. La notification compte maintenant aussi l'AUR (`yay -Qua`).
+- Jellyfin/Spotify (Flatpak) : mis à jour par Discover ou `maj`. Si l'un d'eux ne se met toujours pas à jour, noter lequel et le message.
+
+## 14. Icône « Mises à jour » dans la barre (18/11)
+- Widget Plasma maison `org.surface.majsysteme` (`overlay/.../surface/plasmoid-maj`, installé dans `/usr/share/plasma/plasmoids/`). Tourne dans plasmashell : aucun processus en plus.
+- `surface-updates-check` écrit le total dans `~/.cache/surface-updates` ; l'icône relit ce fichier chaque minute. Visible (ActiveStatus) s'il y a des mises à jour, rangée dans les entrées masquées sinon. Un clic : `konsole -e maj`. `maj` remet le compteur à jour à la fin (`--silencieux`), l'icône disparaît.
+- **Pas testé sur la Surface.** Si l'icône n'apparaît pas : clic droit sur la flèche de la zone de notification > Configurer > Entrées > « Mises à jour » sur « Toujours affiché » ou « Afficher si utile ». Après install, se déconnecter/reconnecter (ou `plasmashell --replace &`).
+
+## 15. Build depuis la Surface (18/11)
+- `build.sh` travaille désormais dans `/var/tmp/surface-iso-work` (avant : `/tmp`, en RAM sur Arch, trop petit avec 4 Go). Avertissement si moins de 10 Go libres. Modifiable : `sudo env WORK=/autre/dossier ./build.sh`.
+- Ne pas flasher la clé sur l'eMMC par erreur : vérifier `/dev/sdX` avec `lsblk` (l'eMMC est `mmcblk1`).
+
+## 16. Checklist du prochain rebuild (18/11)
+Ce que l'ISO installe d'office (tout est dans `install-surface`, rien à faire à la main) :
+- **Système** : Arch + noyau linux-surface, **GRUB** (thème Breeze, entrée Arch + entrée de secours removable), zram, pare-feu ufw.
+- **Bureau** : **KDE Plasma** (plasma-desktop, SDDM en Wayland avec clavier virtuel, Konsole, Dolphin, Kate, Ark, Spectacle, Moniteur système).
+- **Applis** : Firefox, Discord, Jellyfin Desktop, Spotify, Claude.
+- **Mises à jour** : icône dans la barre, notification quotidienne, `maj`, hook GRUB.
+- **Logiciels** : Discover + Flatpak (Flathub), yay (AUR).
+
+Étapes : fusionner la PR #1 → `sudo pacman -Syu` → `git checkout initial && git pull` → `sudo ./build.sh` → flasher la clé (vérifier `/dev/sdX` avec `lsblk`, jamais `mmcblk1`) → booter la Surface dessus → `install-surface` sur `mmcblk1`.
+Attention : la réinstallation efface toute l'eMMC. Sauvegarder avant ce qui n'est pas sur GitHub ou dans le cloud.
+
+## 17. Secure Boot (18/11) — PAS TESTÉ
+- Méthode : **sbctl**, clés perso + clés Microsoft (`enroll-keys --microsoft`, recommandé par sbctl pour ne pas casser le matériel). Pas de shim.
+- Sur les Surface, Secure Boot désactivé dans l'UEFI = mode configuration (doc lanzaboote, testé Surface Book 3 et Go 3). Sur la Surface Go **1** l'UEFI est différent et ça a coincé (issue sbctl #295) ; la Go 2 a l'UEFI Surface, donc normalement OK, à confirmer.
+- `surface-grub-install` : GRUB avec modules intégrés (`--modules=…`, thème Breeze compris) et `--disable-shim-lock`, entrée Arch + removable, re-signe si des clés sbctl existent. Utilisé par l'install, le hook GRUB et `activer-secure-boot`. Noms de modules vérifiés dans les sources GRUB (`efifwsetup`, pas `fwsetup`).
+- Re-signature auto : hook pacman de sbctl (noyau, fichiers de /boot) + notre hook GRUB.
+- `activer-secure-boot` n'est **pas** lancé pendant l'install : il faut de toute façon passer par l'UEFI pour activer Secure Boot.
+- Retour arrière : désactiver Secure Boot dans l'UEFI. Ne jamais supprimer `/var/lib/sbctl` (clés).
+
+## 18. Réponses du 18/11 et ajouts
+- **Release** : v1.0.0 publiée directement après un build GitHub réussi (choix de Light).
+- **Chiffrement** : en option dans `install-surface` (LUKS2, phrase de passe = mot de passe de session si laissée vide). Initramfs passé en hooks systemd (`sd-encrypt`, `sd-vconsole` pour l'AZERTY, `keyboard` avant `autodetect` pour le Type Cover / clavier USB), `rd.luks.name=UUID=root`, `rd.luks.options=discard` (TRIM gardé). /boot (partition EFI) reste en clair. **Pas testé.** Limite : pas de clavier tactile au déverrouillage (piste future : unl0kr). À vérifier : le Type Cover marche-t-il à l'écran de déverrouillage ?
+- **Btrfs + Snapper** : non pour l'instant (peut-être plus tard, avec une carte SD).
+- **Usage** : multimédia, notes/dessin au stylet, Discord, Claude, navigateur léger. Ajoutés : Xournal++, Krita, `intel-media-driver` (VA-API). Firefox gardé (déjà allégé : 2 processus, onglets déchargés).
+
+## 19. Deuxième série de réponses (18/11)
+- **Navigateur : Falkon remplace Firefox** (navigateur KDE, QtWebEngine, AdBlock intégré à activer dans ses extensions). Paquets `firefox`, `firefox-i18n-fr` et les policies Firefox retirés de l'ISO. Sur la Surface actuelle, `appliquer-sur-surface.sh` installe Falkon mais ne désinstalle pas Firefox (`sudo pacman -Rns firefox firefox-i18n-fr` pour le faire).
+- **Bluetooth** : gardé actif (sert sur la Surface).
+- **Boutons du stylet** : mapping à décider après le diagnostic libinput.
+- **install-surface** : valeurs par défaut neutres gardées (ISO partageable).
+- Releases : la session Claude ne peut pas créer de tags/releases (bloqué par le proxy). Publier : Actions > « Construire l'ISO » > Run workflow > version (ex. `1.1.0`). Une release `1.0.0` existe déjà (ISO du 12/11) → prochaine version `1.1.0`.
+

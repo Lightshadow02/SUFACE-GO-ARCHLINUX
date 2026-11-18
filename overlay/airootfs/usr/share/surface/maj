@@ -1,0 +1,31 @@
+#!/bin/bash
+# maj : met à jour tout le système d'un coup (pacman + AUR + Flatpak)
+set -uo pipefail
+
+echo "== Paquets Arch (pacman) =="
+sudo pacman -Syu || { echo "pacman a échoué, on s'arrête là."; read -rp "Entrée pour fermer " _; exit 1; }
+
+if command -v yay &>/dev/null; then
+  echo
+  echo "== AUR (yay) =="
+  yay -Sua
+fi
+
+if command -v flatpak &>/dev/null; then
+  echo
+  echo "== Flatpak =="
+  flatpak update -y
+  flatpak uninstall --unused -y
+fi
+
+# Nouveau noyau installé ? Alors un redémarrage est nécessaire.
+if [[ ! -d /usr/lib/modules/$(uname -r) ]]; then
+  echo
+  echo ">> Le noyau a été mis à jour : redémarre la tablette."
+fi
+
+# Remet à jour le compteur de l'icône de la barre (elle disparaît si tout est à jour)
+/usr/local/bin/surface-updates-check --silencieux
+
+echo
+read -rp "Terminé. Entrée pour fermer " _
