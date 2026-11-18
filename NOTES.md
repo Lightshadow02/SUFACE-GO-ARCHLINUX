@@ -157,6 +157,6 @@ Stylet
 - **Pas testé sur la Surface.** Si l'icône n'apparaît pas : clic droit sur la flèche de la zone de notification > Configurer > Entrées > « Mises à jour » sur « Toujours affiché » ou « Afficher si utile ». Après install, se déconnecter/reconnecter (ou `plasmashell --replace &`).
 
 ## 15. Build depuis la Surface (18/11)
-- `build.sh` travaille désormais dans `/var/tmp/surface-iso-work` (avant : `/tmp`, en RAM sur Arch, trop petit avec 4 Go). Avertissement si moins de 10 Go libres. Modifiable : `sudo WORK=/autre/dossier ./build.sh`.
+- `build.sh` travaille désormais dans `/var/tmp/surface-iso-work` (avant : `/tmp`, en RAM sur Arch, trop petit avec 4 Go). Avertissement si moins de 10 Go libres. Modifiable : `sudo env WORK=/autre/dossier ./build.sh`.
 - Ne pas flasher la clé sur l'eMMC par erreur : vérifier `/dev/sdX` avec `lsblk` (l'eMMC est `mmcblk1`).
 

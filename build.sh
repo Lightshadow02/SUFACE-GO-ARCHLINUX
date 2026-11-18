@@ -13,7 +13,7 @@ SURFACE_LIVE=0
 HERE=$(cd "$(dirname "$0")" && pwd)
 PROFILE=$HERE/build/profile
 # Dossier de travail sur le disque (/tmp est en RAM sur Arch : trop petit avec 4 Go)
-# Changeable : sudo WORK=/autre/dossier ./build.sh
+# Changeable : sudo env WORK=/autre/dossier ./build.sh
 WORK=${WORK:-/var/tmp/surface-iso-work}
 OUT=$HERE/out
 KEY_ID=56C464BAAC421453
