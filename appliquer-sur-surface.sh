@@ -16,8 +16,8 @@ install -Dm644 "$S/surface-updates-check.timer" /etc/systemd/user/surface-update
 install -Dm644 "$S/95-grub-update.hook" /etc/pacman.d/hooks/95-grub-update.hook
 systemctl --global enable surface-updates-check.timer
 
-echo "== Applis : Firefox, Jellyfin, Spotify, Claude =="
-pacman -S --needed --noconfirm firefox firefox-i18n-fr
+echo "== Applis : Firefox, Discord, Jellyfin, Spotify, Claude =="
+pacman -S --needed --noconfirm firefox firefox-i18n-fr discord
 flatpak install -y --noninteractive flathub org.jellyfin.JellyfinDesktop com.spotify.Client || echo "Flatpak : échec (réseau ?)"
 su - "$U" -c 'yay -S --needed claude-desktop' || echo "Claude : échec, réessaie avec : yay -S claude-desktop"
 

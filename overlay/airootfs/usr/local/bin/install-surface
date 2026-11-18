@@ -22,7 +22,7 @@ PACKAGES=(
   pacman-contrib ufw plasma-firewall
   breeze-grub firefox-i18n-fr
   fish fastfetch eza bat expac ttf-meslo-nerd
-  libnotify
+  libnotify discord
 )
 
 die() { echo "ERREUR : $*" >&2; exit 1; }
