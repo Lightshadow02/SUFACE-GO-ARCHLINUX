@@ -17,6 +17,11 @@ Avant le build : `sudo pacman -Syu`. Il faut environ 10 Go libres ; le travail s
 
 L'ISO sort dans `out/`. Flashe-la (Rufus en mode DD, Etcher, ou `dd`).
 
+## Télécharger l'ISO toute prête
+
+Les versions publiées sont dans les **Releases** du dépôt (ISO + `SHA256SUMS`). Vérifier : `sha256sum -c SHA256SUMS`.
+Elles sont construites automatiquement par GitHub (`.github/workflows/build-iso.yml`) : pousser un tag `v1.0.0` publie une release, un tag avec tiret (`v1.1.0-beta1`) une pré-release.
+
 ## Installer sur la Surface
 
 1. UEFI (Volume Haut + Power) : Secure Boot = Disabled.
@@ -42,6 +47,16 @@ L'ISO sort dans `out/`. Flashe-la (Rufus en mode DD, Etcher, ou `dd`).
 - Installer des logiciels : **Discover** (store KDE, pacman + Flatpak/Flathub), `yay -S nom` pour l'AUR, `sudo pacman -S nom`
 - Clavier virtuel Plasma Keyboard (préactivé), rotation auto (iio-sensor-proxy)
 - Fuseau Europe/Paris, locale fr_FR, clavier fr, root verrouillé (sudo pour l'utilisateur)
+
+## Secure Boot (optionnel)
+
+GRUB est installé prêt pour Secure Boot. Pour l'activer, après l'installation :
+
+1. Laisse Secure Boot **désactivé** dans l'UEFI (sur Surface, c'est le mode qui permet d'inscrire des clés).
+2. Lance `activer-secure-boot` : il crée tes clés, les inscrit avec celles de Microsoft, signe GRUB et le noyau.
+3. UEFI (Volume Haut + Power) > Sécurité > active Secure Boot, redémarre.
+
+Les mises à jour re-signent tout automatiquement (hook sbctl). Si la tablette refuse de démarrer, désactive Secure Boot dans l'UEFI. Ne supprime jamais `/var/lib/sbctl`.
 
 ## Surface déjà installée
 

@@ -171,3 +171,11 @@ Ce que l'ISO installe d'office (tout est dans `install-surface`, rien à faire �
 Étapes : fusionner la PR #1 → `sudo pacman -Syu` → `git checkout initial && git pull` → `sudo ./build.sh` → flasher la clé (vérifier `/dev/sdX` avec `lsblk`, jamais `mmcblk1`) → booter la Surface dessus → `install-surface` sur `mmcblk1`.
 Attention : la réinstallation efface toute l'eMMC. Sauvegarder avant ce qui n'est pas sur GitHub ou dans le cloud.
 
+## 17. Secure Boot (18/11) — PAS TESTÉ
+- Méthode : **sbctl**, clés perso + clés Microsoft (`enroll-keys --microsoft`, recommandé par sbctl pour ne pas casser le matériel). Pas de shim.
+- Sur les Surface, Secure Boot désactivé dans l'UEFI = mode configuration (doc lanzaboote, testé Surface Book 3 et Go 3). Sur la Surface Go **1** l'UEFI est différent et ça a coincé (issue sbctl #295) ; la Go 2 a l'UEFI Surface, donc normalement OK, à confirmer.
+- `surface-grub-install` : GRUB avec modules intégrés (`--modules=…`, thème Breeze compris) et `--disable-shim-lock`, entrée Arch + removable, re-signe si des clés sbctl existent. Utilisé par l'install, le hook GRUB et `activer-secure-boot`. Noms de modules vérifiés dans les sources GRUB (`efifwsetup`, pas `fwsetup`).
+- Re-signature auto : hook pacman de sbctl (noyau, fichiers de /boot) + notre hook GRUB.
+- `activer-secure-boot` n'est **pas** lancé pendant l'install : il faut de toute façon passer par l'UEFI pour activer Secure Boot.
+- Retour arrière : désactiver Secure Boot dans l'UEFI. Ne jamais supprimer `/var/lib/sbctl` (clés).
+

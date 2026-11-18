@@ -1,0 +1,19 @@
+#!/bin/bash
+# Installe GRUB sur la Surface : entrée « Arch » + entrée de secours (EFI/BOOT/BOOTX64.EFI).
+# Les modules sont intégrés au binaire et shim_lock est coupé : GRUB démarre aussi avec Secure Boot
+# (clés perso sbctl). Si des clés sbctl existent, les binaires GRUB sont re-signés.
+# Utilisé par install-surface, le hook pacman 95-grub-update et activer-secure-boot.
+set -euo pipefail
+
+MODULES="tpm part_gpt fat ext2 normal linux search search_fs_uuid search_label configfile echo test loadenv sleep reboot halt efifwsetup all_video efi_gop gfxterm gfxterm_background gfxmenu png font gzio"
+
+grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=Arch \
+  --modules="$MODULES" --disable-shim-lock --recheck
+grub-install --target=x86_64-efi --efi-directory=/boot --removable \
+  --modules="$MODULES" --disable-shim-lock --recheck
+grub-mkconfig -o /boot/grub/grub.cfg
+
+if command -v sbctl &>/dev/null && [[ -e /var/lib/sbctl/keys/db/db.key ]]; then
+  sbctl sign -s /boot/EFI/Arch/grubx64.efi
+  sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
+fi

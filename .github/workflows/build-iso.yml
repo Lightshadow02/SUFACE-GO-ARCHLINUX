@@ -1,0 +1,67 @@
+# Construit l'ISO Arch Surface dans un conteneur Arch Linux.
+# - Pull request : build de contrôle, ISO dispo en artefact 3 jours (onglet Actions)
+# - Lancement manuel (Actions > Construire l'ISO > Run workflow) : pareil
+# - Tag v* (ex. v1.0.0) : publie l'ISO + SHA256SUMS dans une Release GitHub
+#   (tag avec un tiret, ex. v1.1.0-beta1 → pré-release)
+name: Construire l'ISO
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths-ignore: ['**.md', 'docs/**']
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: iso-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  iso:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    container:
+      image: archlinux:latest
+      options: --privileged
+    steps:
+      - name: Paquets de build
+        run: pacman -Syu --noconfirm --needed archiso git
+
+      - uses: actions/checkout@v4
+
+      - name: Construction de l'ISO
+        run: bash build.sh
+
+      - name: Somme de contrôle
+        run: |
+          cd out
+          sha256sum *.iso > SHA256SUMS
+          ls -lh
+          cat SHA256SUMS
+
+      - name: Artefact (contrôle)
+        if: github.event_name != 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: arch-surface-iso
+          path: |
+            out/*.iso
+            out/SHA256SUMS
+          retention-days: 3
+
+      - name: Release GitHub
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            out/*.iso
+            out/SHA256SUMS
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          generate_release_notes: true
+          body: |
+            ISO Arch Linux + KDE Plasma pour Surface Go 2.
+            Flasher : `sudo dd if=arch-surface-*.iso of=/dev/sdX bs=4M status=progress oflag=sync` (vérifie /dev/sdX avec lsblk), ou Ventoy.
+            Installation : boot USB (Volume Bas + Power), puis `install-surface`. Détails dans le README.

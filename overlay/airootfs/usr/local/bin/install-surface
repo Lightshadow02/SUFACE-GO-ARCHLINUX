@@ -22,7 +22,7 @@ PACKAGES=(
   pacman-contrib ufw plasma-firewall
   breeze-grub firefox-i18n-fr
   fish fastfetch eza bat expac ttf-meslo-nerd
-  libnotify discord
+  libnotify discord sbctl
 )
 
 die() { echo "ERREUR : $*" >&2; exit 1; }
@@ -213,6 +213,9 @@ install -Dm644 /usr/share/surface/maj.desktop /mnt/usr/share/applications/maj.de
 install -Dm644 /usr/share/surface/surface-updates-check.service /mnt/etc/systemd/user/surface-updates-check.service
 install -Dm644 /usr/share/surface/surface-updates-check.timer /mnt/etc/systemd/user/surface-updates-check.timer
 install -Dm644 /usr/share/surface/95-grub-update.hook /mnt/etc/pacman.d/hooks/95-grub-update.hook
+# GRUB compatible Secure Boot + commande activer-secure-boot (à lancer après l'install, voir README)
+install -Dm755 /usr/share/surface/surface-grub-install /mnt/usr/local/bin/surface-grub-install
+install -Dm755 /usr/share/surface/activer-secure-boot /mnt/usr/local/bin/activer-secure-boot
 # Icône « Mises à jour » dans la zone de notification (widget Plasma, visible seulement s'il y a des mises à jour)
 mkdir -p /mnt/usr/share/plasma/plasmoids
 cp -r /usr/share/surface/plasmoid-maj /mnt/usr/share/plasma/plasmoids/org.surface.majsysteme
@@ -341,9 +344,8 @@ sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 
 sed -i 's/^#\?GRUB_TIMEOUT=.*/GRUB_TIMEOUT=3/' /etc/default/grub
 sed -i '/^#\?GRUB_THEME=/d' /etc/default/grub
 echo 'GRUB_THEME="/usr/share/grub/themes/breeze/theme.txt"' >> /etc/default/grub
-grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=Arch --recheck
-grub-install --target=x86_64-efi --efi-directory=/boot --removable --recheck
-grub-mkconfig -o /boot/grub/grub.cfg
+# Entrée Arch + entrée de secours, modules intégrés (prêt pour Secure Boot, voir activer-secure-boot)
+/usr/local/bin/surface-grub-install
 POST
 chmod +x /mnt/root/post.sh
 arch-chroot /mnt /root/post.sh "$HOSTNAME_" "$USER_NAME"
