@@ -12,40 +12,48 @@ echo "== État actuel =="
 sbctl status || true
 echo
 
-if [[ ! -e /var/lib/sbctl/keys/db/db.key ]]; then
-  if ! sbctl status 2>/dev/null | grep -E '^Setup Mode:' | grep -q 'Enabled'; then
-    cat <<'MSG'
-La Surface n'est pas en mode configuration : les clés ne peuvent pas être inscrites.
-1. Redémarre dans l'UEFI : maintiens Volume Haut puis appuie sur Power.
-2. Sécurité > Secure Boot : désactive-le, enregistre, redémarre.
-3. Relance : activer-secure-boot
-MSG
-    exit 1
-  fi
+en_mode_config() { sbctl status 2>/dev/null | grep -E '^Setup Mode:' | grep -q 'Enabled'; }
+
+if en_mode_config; then
   cat <<'MSG'
 Ce script va :
-  - créer tes clés Secure Boot (gardées dans /var/lib/sbctl, à ne jamais supprimer),
+  - créer tes clés Secure Boot si elles n'existent pas (gardées dans /var/lib/sbctl, à ne jamais supprimer),
   - les inscrire dans l'UEFI de la Surface, avec les clés Microsoft (indispensables au matériel),
   - réinstaller GRUB et signer GRUB + le noyau linux-surface.
 Les mises à jour re-signeront tout automatiquement.
 MSG
   read -rp "Tape OUI pour continuer : " OK
   [[ $OK == OUI ]] || { echo "Annulé."; exit 1; }
-  sbctl create-keys
+  [[ -e /var/lib/sbctl/keys/db/db.key ]] || sbctl create-keys
   sbctl enroll-keys --microsoft
+  if en_mode_config; then
+    echo "ERREUR : l'UEFI est toujours en mode configuration, les clés n'ont pas été inscrites."
+    echo "N'active PAS Secure Boot dans l'UEFI. Envoie la sortie de : sbctl status"
+    exit 1
+  fi
+elif [[ ! -e /var/lib/sbctl/keys/db/db.key ]]; then
+  cat <<'MSG'
+La Surface n'est pas en mode configuration : les clés ne peuvent pas être inscrites.
+1. Redémarre dans l'UEFI : maintiens Volume Haut puis appuie sur Power.
+2. Sécurité > Secure Boot : désactive-le, enregistre, redémarre.
+3. Relance : activer-secure-boot
+MSG
+  exit 1
 fi
 
 /usr/local/bin/surface-grub-install
 for k in /boot/vmlinuz-linux-surface /boot/vmlinuz-linux; do
-  [[ -e $k ]] && sbctl sign -s "$k"
+  if [[ -e $k ]]; then sbctl sign -s "$k"; fi
 done
 
 echo
 echo "== Vérification =="
+sbctl status || true
 sbctl verify || true
 cat <<'MSG'
 
-Si tout est marqué signé :
+Si sbctl status affiche « Setup Mode: Disabled » et que le noyau, grubx64.efi et BOOTX64.EFI sont signés
+(core.efi et grub.efi de /boot/grub peuvent rester non signés, ils ne servent pas au démarrage) :
   1. Redémarre dans l'UEFI (Volume Haut + Power).
   2. Sécurité > Secure Boot : active-le (l'UEFI peut afficher « configuration de clés personnalisée »).
   3. Redémarre. Vérifie ensuite avec : sbctl status  (Secure Boot : Enabled)
