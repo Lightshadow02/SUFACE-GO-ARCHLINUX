@@ -337,8 +337,11 @@ systemctl enable fstrim.timer paccache.timer ufw
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo \
   || echo "Flathub non ajouté (réseau ?). Plus tard : flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo"
 # Applis de base en Flatpak : Jellyfin Desktop et Spotify. Échec non bloquant.
-flatpak install -y --noninteractive flathub org.jellyfin.JellyfinDesktop com.spotify.Client \
-  || echo "Jellyfin/Spotify non installés. Plus tard : flatpak install flathub org.jellyfin.JellyfinDesktop com.spotify.Client"
+# Une appli à la fois : un échec (ex. Spotify, qui télécharge chez Spotify) ne bloque pas les autres
+for app in org.jellyfin.JellyfinDesktop com.spotify.Client; do
+  flatpak install -y --noninteractive flathub "$app" \
+    || echo "$app non installé. Plus tard : flatpak install flathub $app"
+done
 
 # yay (AUR) : version précompilée, pas de compilation lourde. Échec non bloquant.
 echo "$U ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/99-tmp-aur
@@ -372,6 +375,9 @@ rm -f /mnt/root/post.sh
 
 echo "$USER_NAME:$PASS" | arch-chroot /mnt chpasswd
 passwd -l -R /mnt root >/dev/null 2>&1 || true   # root verrouillé, on passe par sudo
+
+# Garde le journal de l'installation sur le système installé (sinon il disparaît avec le live)
+cp "$LOG" /mnt/var/log/install-surface.log 2>/dev/null || true
 
 umount -R /mnt
 if (( LUKS )); then cryptsetup close root; fi
