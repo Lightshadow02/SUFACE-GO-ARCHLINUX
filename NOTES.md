@@ -127,3 +127,4 @@ Reste à tester : Type Cover (pas branchée pendant l'analyse), mode tablette/ge
 - **Incohérence relevée** : §10 dit « uBlock Origin forcé » mais `policies.json` ne contient pas encore la règle ExtensionSettings.
 - **Applis dans l'ISO** : Jellyfin Desktop (`org.jellyfin.JellyfinDesktop`) et Spotify (`com.spotify.Client`) en Flatpak, Claude via `yay -S claude-desktop` (pendant le sudo temporaire de l'install). Firefox était déjà là. Collabora Office reste à la main.
 - **`appliquer-sur-surface.sh`** : pose tout ça sur la Surface déjà installée, sans réinstaller.
+- **Discord** : paquet `discord` du dépôt officiel Arch (extra), mis à jour par pacman/`maj`.
