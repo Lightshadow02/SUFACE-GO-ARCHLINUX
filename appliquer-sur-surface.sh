@@ -14,6 +14,10 @@ install -Dm644 "$S/maj.desktop" /usr/share/applications/maj.desktop
 install -Dm644 "$S/surface-updates-check.service" /etc/systemd/user/surface-updates-check.service
 install -Dm644 "$S/surface-updates-check.timer" /etc/systemd/user/surface-updates-check.timer
 install -Dm644 "$S/95-grub-update.hook" /etc/pacman.d/hooks/95-grub-update.hook
+echo "== Secure Boot : outils (rien n'est activé, lance activer-secure-boot pour ça) =="
+pacman -S --needed --noconfirm sbctl
+install -Dm755 "$S/surface-grub-install" /usr/local/bin/surface-grub-install
+install -Dm755 "$S/activer-secure-boot" /usr/local/bin/activer-secure-boot
 rm -rf /usr/share/plasma/plasmoids/org.surface.majsysteme
 cp -r "$S/plasmoid-maj" /usr/share/plasma/plasmoids/org.surface.majsysteme
 su - "$U" -c '/usr/local/bin/surface-updates-check --silencieux' || true

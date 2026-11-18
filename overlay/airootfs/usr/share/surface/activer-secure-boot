@@ -1,0 +1,53 @@
+#!/bin/bash
+# Active Secure Boot sur la Surface avec des clés perso (sbctl) + celles de Microsoft.
+# À lancer sur le système INSTALLÉ, avec Secure Boot DÉSACTIVÉ dans l'UEFI
+# (sur Surface, Secure Boot désactivé = mode configuration, les clés peuvent être inscrites).
+# Retour arrière : UEFI (Volume Haut + Power) > Sécurité > Secure Boot désactivé, la tablette redémarre comme avant.
+set -euo pipefail
+[[ $EUID -eq 0 ]] || exec sudo "$0" "$@"
+
+pacman -S --needed --noconfirm sbctl
+
+echo "== État actuel =="
+sbctl status || true
+echo
+
+if [[ ! -e /var/lib/sbctl/keys/db/db.key ]]; then
+  if ! sbctl status 2>/dev/null | grep -E '^Setup Mode:' | grep -q 'Enabled'; then
+    cat <<'MSG'
+La Surface n'est pas en mode configuration : les clés ne peuvent pas être inscrites.
+1. Redémarre dans l'UEFI : maintiens Volume Haut puis appuie sur Power.
+2. Sécurité > Secure Boot : désactive-le, enregistre, redémarre.
+3. Relance : activer-secure-boot
+MSG
+    exit 1
+  fi
+  cat <<'MSG'
+Ce script va :
+  - créer tes clés Secure Boot (gardées dans /var/lib/sbctl, à ne jamais supprimer),
+  - les inscrire dans l'UEFI de la Surface, avec les clés Microsoft (indispensables au matériel),
+  - réinstaller GRUB et signer GRUB + le noyau linux-surface.
+Les mises à jour re-signeront tout automatiquement.
+MSG
+  read -rp "Tape OUI pour continuer : " OK
+  [[ $OK == OUI ]] || { echo "Annulé."; exit 1; }
+  sbctl create-keys
+  sbctl enroll-keys --microsoft
+fi
+
+/usr/local/bin/surface-grub-install
+for k in /boot/vmlinuz-linux-surface /boot/vmlinuz-linux; do
+  [[ -e $k ]] && sbctl sign -s "$k"
+done
+
+echo
+echo "== Vérification =="
+sbctl verify || true
+cat <<'MSG'
+
+Si tout est marqué signé :
+  1. Redémarre dans l'UEFI (Volume Haut + Power).
+  2. Sécurité > Secure Boot : active-le (l'UEFI peut afficher « configuration de clés personnalisée »).
+  3. Redémarre. Vérifie ensuite avec : sbctl status  (Secure Boot : Enabled)
+Si la Surface refuse de démarrer : retourne dans l'UEFI et désactive Secure Boot, tout redémarre comme avant.
+MSG
