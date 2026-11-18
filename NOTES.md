@@ -200,3 +200,5 @@ Attention : la réinstallation efface toute l'eMMC. Sauvegarder avant ce qui n'e
 - RAM 2,87 Go / 3,69 Go à 18 min de démarrage : à regarder (`psmem`).
 
 - Clavier Bluetooth (pavé vu comme une souris, 093a:2860) : clic gauche OK après la réinstallation 1.1.0.
+- **Secure Boot, 1er essai (18/11)** : Secure Boot activé dans l'UEFI avant le script → « Security boot fail » (normal, rien de signé). Après le script : noyau + grubx64.efi + BOOTX64.EFI signés, mais `Setup Mode` toujours Enabled et `Vendor Keys: none` → clés **pas inscrites**. Bug du script : l'inscription n'était faite qu'à la création des clés (un 2e lancement la sautait). Corrigé : inscription dès que l'UEFI est en mode configuration + arrêt avec erreur si l'inscription n'a pas pris. Reste à voir si l'UEFI de la Go 2 accepte `sbctl enroll-keys --microsoft`.
+
