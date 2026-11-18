@@ -56,7 +56,7 @@ GRUB est installé prêt pour Secure Boot. Pour l'activer, après l'installation
 
 1. Laisse Secure Boot **désactivé** dans l'UEFI (sur Surface, c'est le mode qui permet d'inscrire des clés).
 2. Lance `activer-secure-boot` : il crée tes clés, les inscrit avec celles de Microsoft, signe GRUB et le noyau.
-3. UEFI (Volume Haut + Power) > Sécurité > active Secure Boot, redémarre.
+3. Redémarre **sans toucher au réglage Secure Boot de l'UEFI** : il s'active tout seul (« configuration personnalisée »). L'activer à la main dans le menu remet les clés Microsoft d'usine et donne « Security boot fail ».
 
 Les mises à jour re-signent tout automatiquement (hook sbctl). Si la tablette refuse de démarrer, désactive Secure Boot dans l'UEFI. Ne supprime jamais `/var/lib/sbctl`.
 
