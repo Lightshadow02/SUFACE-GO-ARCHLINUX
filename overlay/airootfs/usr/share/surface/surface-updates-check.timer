@@ -1,0 +1,10 @@
+[Unit]
+Description=Vérification quotidienne des mises à jour
+
+[Timer]
+OnStartupSec=10min
+OnUnitActiveSec=1d
+Persistent=true
+
+[Install]
+WantedBy=timers.target
