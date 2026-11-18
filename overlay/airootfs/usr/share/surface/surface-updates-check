@@ -1,5 +1,5 @@
 #!/bin/bash
-# Compte les mises à jour disponibles (pacman + Flatpak) et prévient avec une notification Plasma.
+# Compte les mises à jour disponibles (pacman + AUR + Flatpak) et prévient avec une notification Plasma.
 # Lancé par surface-updates-check.timer. Ne télécharge aucun paquet.
 set -uo pipefail
 
@@ -8,10 +8,14 @@ N_FLAT=0
 if command -v flatpak &>/dev/null; then
   N_FLAT=$(flatpak remote-ls --updates --columns=application 2>/dev/null | wc -l)
 fi
-TOTAL=$((N_PAC + N_FLAT))
+N_AUR=0
+if command -v yay &>/dev/null; then
+  N_AUR=$(yay -Qua 2>/dev/null | wc -l)
+fi
+TOTAL=$((N_PAC + N_FLAT + N_AUR))
 
 (( TOTAL > 0 )) || exit 0
 
 notify-send -a "Mises à jour" -i system-software-update \
   "$TOTAL mise(s) à jour disponible(s)" \
-  "Arch : $N_PAC · Flatpak : $N_FLAT"$'\n'"Lance « Mettre à jour le système » dans le menu, ou tape maj dans Konsole."
+  "Arch : $N_PAC · AUR : $N_AUR · Flatpak : $N_FLAT"$'\n'"Lance « Mettre à jour le système » dans le menu, ou tape maj dans Konsole."

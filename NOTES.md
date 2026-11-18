@@ -146,3 +146,8 @@ Stylet
 8. Retirer sshd et la règle ufw temporaire (§5 et §9) quand l'administration à distance est finie.
 9. Réinstaller proprement la Surface avec une ISO reconstruite depuis la branche fusionnée.
 
+## 13. Applis qui ne se mettent pas à jour (18/11)
+- **Discord** (paquet Arch) bloque au démarrage quand le dépôt a un temps de retard sur Discord. Corrigé : `"SKIP_HOST_UPDATE": true` dans `~/.config/discord/settings.json` (skel de l'ISO + `appliquer-sur-surface.sh`), pacman fait les mises à jour.
+- **Claude** (AUR) : Discover ne gère pas l'AUR, seul `yay` (donc `maj`) le met à jour. La notification compte maintenant aussi l'AUR (`yay -Qua`).
+- Jellyfin/Spotify (Flatpak) : mis à jour par Discover ou `maj`. Si l'un d'eux ne se met toujours pas à jour, noter lequel et le message.
+

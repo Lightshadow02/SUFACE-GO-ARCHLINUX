@@ -21,5 +21,16 @@ pacman -S --needed --noconfirm firefox firefox-i18n-fr discord
 flatpak install -y --noninteractive flathub org.jellyfin.JellyfinDesktop com.spotify.Client || echo "Flatpak : échec (réseau ?)"
 su - "$U" -c 'yay -S --needed claude-desktop' || echo "Claude : échec, réessaie avec : yay -S claude-desktop"
 
+echo "== Discord : mises à jour laissées à pacman =="
+H=$(getent passwd "$U" | cut -d: -f6)
+F=$H/.config/discord/settings.json
+if [[ ! -s $F ]]; then
+  install -d -o "$U" -g "$U" "$H/.config/discord"
+  printf '{\n  "SKIP_HOST_UPDATE": true\n}\n' > "$F"
+  chown "$U:$U" "$F"
+elif ! grep -q SKIP_HOST_UPDATE "$F"; then
+  sed -i '0,/{/s//{\n  "SKIP_HOST_UPDATE": true,/' "$F"
+fi
+
 echo
 echo "Terminé. Déconnecte-toi puis reconnecte-toi pour activer la notification des mises à jour."

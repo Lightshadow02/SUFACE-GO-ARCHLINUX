@@ -173,6 +173,11 @@ cp /usr/share/surface/fastfetch.jsonc "$SKEL/fastfetch/config.jsonc"
 cp /usr/share/surface/Surface.profile /usr/share/surface/ArchBleu.colorscheme /mnt/etc/skel/.local/share/konsole/
 printf '[Desktop Entry]\nDefaultProfile=Surface.profile\n' > "$SKEL/konsolerc"
 
+# Discord : laisse pacman faire les mises à jour (sinon Discord bloque au démarrage
+# quand le paquet Arch a un temps de retard sur la version de Discord)
+mkdir -p "$SKEL/discord"
+printf '{\n  "SKIP_HOST_UPDATE": true\n}\n' > "$SKEL/discord/settings.json"
+
 # KRunner sans recherche de fichiers (baloorunner)
 printf '[Plugins]\nbaloosearchEnabled=false\n' > "$SKEL/krunnerrc"
 
