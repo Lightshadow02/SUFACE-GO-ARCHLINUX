@@ -20,7 +20,7 @@ L'ISO sort dans `out/`. Flashe-la (Rufus en mode DD, Etcher, ou `dd`).
 ## Télécharger l'ISO toute prête
 
 Les versions publiées sont dans les **Releases** du dépôt (ISO + `SHA256SUMS`). Vérifier : `sha256sum -c SHA256SUMS`.
-Elles sont construites automatiquement par GitHub (`.github/workflows/build-iso.yml`) : pousser un tag de version (`1.2.0`) publie une release, un tag avec tiret (`1.2.0-beta1`) une pré-release.
+Elles sont construites automatiquement par GitHub (`.github/workflows/build-iso.yml`). Pour publier : onglet **Actions** > « Construire l'ISO » > **Run workflow**, remplis « version » (ex. `1.2.0`). Autre possibilité : pousser un tag de version (`1.2.0`) publie une release, un tag avec tiret (`1.2.0-beta1`) une pré-release.
 
 ## Installer sur la Surface
 
