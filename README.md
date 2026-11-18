@@ -1,6 +1,6 @@
 # ISO Arch + KDE Plasma pour Surface Go 2
 
-## Construire l'ISO (sur le portable CachyOS)
+## Construire l'ISO (sur le portable CachyOS ou directement sur la Surface)
 
 ```bash
 tar xzf surface-iso.tar.gz && cd surface-iso
@@ -12,6 +12,8 @@ Option expérimentale (noyau linux-surface aussi dans le live, pour avoir clavie
 ```bash
 sudo ./build.sh --surface-live
 ```
+
+Avant le build : `sudo pacman -Syu`. Il faut environ 10 Go libres ; le travail se fait dans `/var/tmp` (pas `/tmp`, qui est en RAM). Sur la Surface le build est plus long qu'à partir du portable.
 
 L'ISO sort dans `out/`. Flashe-la (Rufus en mode DD, Etcher, ou `dd`).
 

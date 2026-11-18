@@ -156,3 +156,7 @@ Stylet
 - `surface-updates-check` écrit le total dans `~/.cache/surface-updates` ; l'icône relit ce fichier chaque minute. Visible (ActiveStatus) s'il y a des mises à jour, rangée dans les entrées masquées sinon. Un clic : `konsole -e maj`. `maj` remet le compteur à jour à la fin (`--silencieux`), l'icône disparaît.
 - **Pas testé sur la Surface.** Si l'icône n'apparaît pas : clic droit sur la flèche de la zone de notification > Configurer > Entrées > « Mises à jour » sur « Toujours affiché » ou « Afficher si utile ». Après install, se déconnecter/reconnecter (ou `plasmashell --replace &`).
 
+## 15. Build depuis la Surface (18/11)
+- `build.sh` travaille désormais dans `/var/tmp/surface-iso-work` (avant : `/tmp`, en RAM sur Arch, trop petit avec 4 Go). Avertissement si moins de 10 Go libres. Modifiable : `sudo WORK=/autre/dossier ./build.sh`.
+- Ne pas flasher la clé sur l'eMMC par erreur : vérifier `/dev/sdX` avec `lsblk` (l'eMMC est `mmcblk1`).
+
