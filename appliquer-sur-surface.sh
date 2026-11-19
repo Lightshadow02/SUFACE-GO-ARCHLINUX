@@ -43,5 +43,9 @@ if pacman -Q firefox &>/dev/null; then
   echo "Firefox est encore installé (remplacé par Falkon). Pour le retirer : sudo pacman -Rns firefox firefox-i18n-fr"
 fi
 
+echo "== Portefeuille KDE : nom par défaut + ouverture auto à la connexion =="
+pacman -S --needed --noconfirm kwallet-pam
+su - "$U" -c 'kwriteconfig6 --file kwalletrc --group Wallet --key "Default Wallet" kdewallet'
+
 echo
 echo "Terminé. Déconnecte-toi puis reconnecte-toi pour activer la notification des mises à jour."

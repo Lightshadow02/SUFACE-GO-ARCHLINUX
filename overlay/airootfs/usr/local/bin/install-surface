@@ -22,7 +22,7 @@ PACKAGES=(
   pacman-contrib ufw plasma-firewall
   breeze-grub
   fish fastfetch eza bat expac ttf-meslo-nerd
-  libnotify discord sbctl cryptsetup
+  libnotify discord sbctl cryptsetup kwallet-pam
   xournalpp krita intel-media-driver
 )
 
@@ -208,6 +208,10 @@ printf '[Desktop Entry]\nDefaultProfile=Surface.profile\n' > "$SKEL/konsolerc"
 # quand le paquet Arch a un temps de retard sur la version de Discord)
 mkdir -p "$SKEL/discord"
 printf '{\n  "SKIP_HOST_UPDATE": true\n}\n' > "$SKEL/discord/settings.json"
+
+# Portefeuille KDE : nom par défaut explicite (sans ça, KDE crée des portefeuilles « __0_ », « __1_ »…
+# et Falkon en redemande un à chaque ouverture). kwallet-pam l'ouvre à la connexion avec le mot de passe de session.
+printf '[Wallet]\nDefault Wallet=kdewallet\nFirst Use=false\n' > "$SKEL/kwalletrc"
 
 # KRunner sans recherche de fichiers (baloorunner)
 printf '[Plugins]\nbaloosearchEnabled=false\n' > "$SKEL/krunnerrc"
